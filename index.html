@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Bahasa Arab Online</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: 0 auto; background: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        button { padding: 10px 20px; cursor: pointer; border: none; border-radius: 5px; font-weight: bold; }
+        .btn-login { background-color: #4285F4; color: white; }
+        .btn-logout { background-color: #e74c3c; color: white; display: none; } /* Sembunyi default */
+        
+        /* Area Konten */
+        #user-info { margin-bottom: 20px; padding: 10px; background: #eeffff; display: none; border-radius: 5px; }
+        .materi-box { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        
+        /* Status Premium */
+        .locked { filter: grayscale(100%); opacity: 0.6; pointer-events: none; position: relative; }
+        .locked::after { content: "🔒 KONTEN PREMIUM"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; color: #fff; padding: 5px 10px; font-size: 12px; }
+        .premium-badge { background: gold; padding: 2px 6px; border-radius: 4px; font-size: 0.8em; font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Belajar Bahasa Arab 🇮🇩</h1>
+    
+    <div id="login-area">
+        <button id="btnLogin" class="btn-login">Login dengan Google</button>
+    </div>
+
+    <div id="user-info">
+        <p>Ahlan, <span id="userName">User</span>! <span id="badgePremium" class="premium-badge">MEMBER PREMIUM</span></p>
+        <button id="btnLogout" class="btn-logout">Logout</button>
+    </div>
+
+    <hr>
+
+    <div class="materi-box">
+        <h3>1. Materi Dasar (Huruf Hijaiyah)</h3>
+        <p>Ini adalah materi gratis. Semua user yang login bisa akses.</p>
+        <button onclick="alert('Mulai belajar Hijaiyah!')">Mulai Belajar</button>
+    </div>
+
+    <div id="premiumContent" class="materi-box locked">
+        <h3>2. Materi Lanjutan (Nahwu & Shorof)</h3>
+        <p>Materi eksklusif untuk member premium bulanan.</p>
+        <button onclick="alert('Masuk ke materi Nahwu!')">Mulai Belajar</button>
+    </div>
+
+</div>
+
+<script type="module">
+  // Import fungsi-fungsi penting dari Firebase (langsung dari CDN)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  // --- 1. KONFIGURASI (GANTI INI DENGAN PUNYA ANDA) ---
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+    authDomain: "durusul-lughoh-online.firebaseapp.com",
+    projectId: "durusul-lughoh-online",
+    storageBucket: "durusul-lughoh-online.firebasestorage.app",
+    messagingSenderId: "260425044938",
+    appId: "1:260425044938:web:88d956d2cac35331887533",
+    measurementId: "G-8NR5K1NKPH"
+  };
+
+  // Inisialisasi
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // Elemen HTML
+  const btnLogin = document.getElementById('btnLogin');
+  const btnLogout = document.getElementById('btnLogout');
+  const userInfo = document.getElementById('user-info');
+  const loginArea = document.getElementById('login-area');
+  const premiumContent = document.getElementById('premiumContent');
+  const badgePremium = document.getElementById('badgePremium');
+
+  // --- 2. FUNGSI LOGIN ---
+  btnLogin.addEventListener('click', () => {
+    signInWithPopup(auth, provider)
+      .then((result) => {
+        console.log("Login sukses:", result.user.email);
+        // Kita bisa otomatis buat data user di database jika belum ada
+        cekAtauBuatUser(result.user);
+      })
+      .catch((error) => console.error(error));
+  });
+
+  // --- 3. FUNGSI LOGOUT ---
+  btnLogout.addEventListener('click', () => {
+    signOut(auth).then(() => {
+      console.log("User logout");
+      location.reload(); // Refresh halaman biar bersih
+    });
+  });
+
+  // --- 4. PANTAU STATUS LOGIN ---
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      // User Sedang Login
+      btnLogin.style.display = 'none';
+      btnLogout.style.display = 'inline-block';
+      userInfo.style.display = 'block';
+      document.getElementById('userName').innerText = user.displayName;
+
+      // Cek apakah dia Premium?
+      cekStatusPremium(user.uid);
+
+    } else {
+      // User Belum Login
+      btnLogin.style.display = 'inline-block';
+      userInfo.style.display = 'none';
+      premiumContent.classList.add('locked'); // Kunci konten
+    }
+  });
+
+  // --- 5. LOGIKA DATABASE (Simpan data user & Cek Premium) ---
+  
+  // Fungsi 1: Pastikan user terdaftar di database saat login
+  async function cekAtauBuatUser(user) {
+    const userRef = doc(db, "users", user.uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) {
+      // Jika user baru pertama kali login, buat datanya di database
+      // Default: premium = false
+      await setDoc(userRef, {
+        email: user.email,
+        nama: user.displayName,
+        isPremium: false,
+        premiumExpired: null,
+        tanggalJoin: new Date().toISOString()
+      });
+      console.log("User baru ditambahkan ke database Firestore");
+    }
+  }
+
+  // Fungsi 2: Cek apakah user premium
+  async function cekStatusPremium(uid) {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      
+      // Cek logika: isPremium TRUE dan Tanggal Expired belum lewat
+      const sekarang = new Date();
+      const tglExpired = data.premiumExpired ? new Date(data.premiumExpired) : null;
+
+      if (data.isPremium && tglExpired > sekarang) {
+        // --- USER ADALAH PREMIUM ---
+        console.log("User Premium Aktif!");
+        premiumContent.classList.remove('locked'); // Buka gembok
+        badgePremium.style.display = 'inline'; // Tampilkan badge
+      } else {
+        console.log("User Free / Expired");
+        premiumContent.classList.add('locked'); // Kunci
+      }
+    }
+  }
+</script>
+
+</body>
+</html>
