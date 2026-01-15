@@ -122,7 +122,7 @@ const databaseSoal = {
             // --- TIPE 1: SUSUN KATA (Pola Dasar: Fi'il + Fa'il Mufrad) ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>جَاءَ الْمُدَرِّسُ</b> (Guru itu telah datang)<br>Susun kalimat: 'Zaid telah duduk'",
+                tanya: "Ikuti Pola:<br> <b>جَاءَ الْمُدَرِّسُ</b><br> (Guru itu telah datang)<br>Susun kalimat: 'Zaid telah duduk'",
                 // Opsi: Fi'il + Fa'il (Dhommah) + Pengecoh (Fathah)
                 opsi: ["زَيْدٌ", "جَلَسَ", "زَيْدًا"], 
                 kunci: ["جَلَسَ", "زَيْدٌ"]
@@ -139,7 +139,7 @@ const databaseSoal = {
             // --- TIPE 3: MENCARI FA'IL ---
             {
                 tipe: "pilih_satu",
-                tanya: "Tentukan FA'IL (Pelaku) dalam kalimat ini:<br>يَقْرَأُ مُحَمَّدٌ الْقُرْآنَ",
+                tanya: "Mana Fa'ilnya?<br>يَقْرَأُ مُحَمَّدٌ الْقُرْآنَ",
                 opsi: ["يَقْرَأُ", "مُحَمَّدٌ", "الْقُرْآنَ"],
                 kunci: "مُحَمَّدٌ"
             },
@@ -147,7 +147,7 @@ const databaseSoal = {
             // --- TIPE 4: BENAR/SALAH (Analisis Harokat) ---
             {
                 tipe: "benar_salah",
-                tanya: "Benar atau Salah harokat kalimat ini?<br>كَتَبَ الطَّالِبِ الدَّرْسَ",
+                tanya: "Benar atau Salah kalimat ini?<br>كَتَبَ الطَّالِبِ الدَّرْسَ",
                 // Salah, karena Fa'il (At-Tholibi) dikasroh, harusnya Dhommah
                 kunci: false
             },
@@ -155,7 +155,7 @@ const databaseSoal = {
             // --- TIPE 5: SUSUN KATA (Pola: Fa'il Mutsanna/Dua) ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>جَاءَ الرَّجُلَانِ</b> (Dua lelaki itu telah datang)<br>Susun kalimat: 'Dua siswa itu telah berdiri'",
+                tanya: "Ikuti Pola:<br? <b>جَاءَ الرَّجُلَانِ</b> <br>(Dua lelaki itu telah datang)<br>Susun kalimat: 'Dua siswa itu telah berdiri'",
                 // Mutsanna Marfu' pakai Alif (ni), bukan Ya (nii)
                 opsi: ["الطَّالِبَانِ", "قَامَ", "الطَّالِبَيْنِ"], 
                 kunci: ["قَامَ", "الطَّالِبَانِ"]
@@ -164,7 +164,7 @@ const databaseSoal = {
             // --- TIPE 6: SUSUN KATA (Pola: Fa'il Jama' Mudzakkar Salim) ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>أَفْلَحَ الْمُؤْمِنُونَ</b> (Orang mukmin itu menang)<br>Susun kalimat: 'Para guru itu telah masuk'",
+                tanya: "Ikuti Pola: <br><b>أَفْلَحَ الْمُؤْمِنُونَ</b><br> (Orang mukmin itu menang)<br>Susun kalimat: 'Para guru itu telah masuk'",
                 // Jama' Marfu' pakai Wawu (uuna), bukan Ya (iina)
                 opsi: ["الْمُدَرِّسُونَ", "دَخَلَ", "الْمُدَرِّسِينَ"], 
                 kunci: ["دَخَلَ", "الْمُدَرِّسُونَ"]
@@ -173,7 +173,7 @@ const databaseSoal = {
             // --- TIPE 7: SUSUN KATA (Pola: Fi'il Mudhari') ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>يَكْتُبُ الطَّالِبُ</b> (Siswa itu sedang menulis)<br>Susun kalimat: 'Dokter itu sedang pergi'",
+                tanya: "Ikuti Pola:<br> <b>يَكْتُبُ الطَّالِبُ</b><br> (Siswa itu sedang menulis)<br>Susun kalimat: 'Dokter itu sedang pergi'",
                 opsi: ["يَذْهَبُ", "الطَّبِيبُ", "تَذْهَبُ"], // Pengecoh: Fi'il Muannats (Tadzhabu)
                 kunci: ["يَذْهَبُ", "الطَّبِيبُ"]
             },
@@ -181,7 +181,7 @@ const databaseSoal = {
             // --- TIPE 8: PILIHAN GANDA (Fi'il Awal Kalimat Tetap Mufrad) ---
             {
                 tipe: "pilih_satu",
-                tanya: "Pilih Fi'il yang tepat (Ingat: Fi'il di awal tetap Mufrad):<br>... الْمُسْلِمُونَ إِلَى الْمَسْجِدِ",
+                tanya: "Isi dengan kata yang tepat!<br>الْمُسْلِمُونَ إِلَى الْمَسْجِدِ...",
                 opsi: ["ذَهَبَ", "ذَهَبُوا", "ذَهَبَتْ"],
                 kunci: "ذَهَبَ"
             },
@@ -189,7 +189,7 @@ const databaseSoal = {
             // --- TIPE 9: SUSUN KATA (Pola: Fa'il Muannats/Pr) ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>قَامَتْ فَاطِمَةُ</b> (Fatimah telah berdiri)<br>Susun kalimat: 'Hindun telah masuk'",
+                tanya: "Ikuti Pola: <br><b>قَامَتْ فَاطِمَةُ</b><br/> (Fatimah telah berdiri)<br>Susun kalimat: 'Hindun telah masuk'",
                 // Fi'il Madhi harus ada Ta' Ta'nits (Dakhalat)
                 opsi: ["هِنْدُ", "دَخَلَتْ", "دَخَلَ"], 
                 kunci: ["دَخَلَتْ", "هِنْدُ"]
@@ -198,7 +198,7 @@ const databaseSoal = {
             // --- TIPE 10: SUSUN KATA (Pola: Mudhari' Muannats) ---
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>تَكْتُبُ عَائِشَةُ</b> (Aisyah sedang menulis)<br>Susun kalimat: 'Maryam sedang membaca'",
+                tanya: "Ikuti Pola:<br/> <b>تَكْتُبُ عَائِشَةُ</b><br> (Aisyah sedang menulis)<br>Susun kalimat: 'Maryam sedang membaca'",
                 // Fi'il Mudhari' diawali Ta' (Taqro-u)
                 opsi: ["تَقْرَأُ", "مَرْيَمُ", "يَقْرَأُ"], 
                 kunci: ["تَقْرَأُ", "مَرْيَمُ"]
@@ -209,7 +209,7 @@ const databaseSoal = {
             // 11. PILIHAN GANDA (Fa'il Jama' Taksir)
             {
                 tipe: "pilih_satu",
-                tanya: "Lengkapi kalimat: ... قَامَ (Para lelaki itu berdiri)",
+                tanya: "Lengkapi kalimat:<br> ... قَامَ <br>(Para lelaki itu berdiri)",
                 // Rijaal (Jama' Taksir) hukumnya seperti Mufrad (Dhommah)
                 opsi: ["الرِّجَالُ", "الرِّجَالِ", "الرِّجَالَ"],
                 kunci: "الرِّجَالُ"
@@ -226,7 +226,7 @@ const databaseSoal = {
             // 13. SUSUN KATA (Pola: Asmaul Khomsah)
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>جَاءَ أَبُوكَ</b> (Bapakmu telah datang)<br>Susun kalimat: 'Saudaramu telah hadir'",
+                tanya: "Ikuti Pola:<br/> <b>جَاءَ أَبُوكَ</b><br> (Bapakmu telah datang)<br>Susun kalimat: 'Saudaramu telah hadir'",
                 // Asmaul Khomsah marfu' dengan Wawu (Akhuuka)
                 opsi: ["حَضَرَ", "أَخُوكَ", "أَخَاكَ"], 
                 kunci: ["حَضَرَ", "أَخُوكَ"]
@@ -243,7 +243,7 @@ const databaseSoal = {
             // 15. PILIHAN GANDA (Fa'il Jama' Muannats Salim)
             {
                 tipe: "pilih_satu",
-                tanya: "Lengkapi: ... جَاءَتِ",
+                tanya: "Lengkapi:<br> ... جَاءَتِ",
                 // Jama' Muannats Salim Marfu' dengan Dhommah
                 opsi: ["الْمُسْلِمَاتُ", "الْمُسْلِمَاتِ", "الْمُسْلِمَاتَ"],
                 kunci: "الْمُسْلِمَاتُ"
@@ -252,7 +252,7 @@ const databaseSoal = {
             // 16. SUSUN KATA (Pola: Benda Mati)
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>طَلَعَ الْقَمَرُ</b> (Bulan terbit)<br>Susun kalimat: 'Hujan turun'",
+                tanya: "Ikuti Pola:<br> <b>طَلَعَ الْقَمَرُ</b><br> (Bulan terbit)<br>Susun kalimat: 'Hujan turun'",
                 opsi: ["نَزَلَ", "الْمَطَرُ", "الْمَطَرَ"],
                 kunci: ["نَزَلَ", "الْمَطَرُ"]
             },
@@ -268,7 +268,7 @@ const databaseSoal = {
             // 18. PILIHAN BANYAK (Identifikasi Marfu')
             {
                 tipe: "pilih_banyak",
-                tanya: "Pilih kata yang SEDANG RAFA' (Bisa jadi Fa'il):",
+                tanya: "Pilih semua kata yang marfu'",
                 opsi: ["الْمُدَرِّسُ", "الْمُدَرِّسَ", "الْمُسْلِمُونَ", "الْمُسْلِمِينَ"],
                 kunci: ["الْمُدَرِّسُ", "الْمُسْلِمُونَ"]
             },
@@ -276,7 +276,7 @@ const databaseSoal = {
             // 19. SUSUN KATA (Pola: Isim Maqsush)
             {
                 tipe: "susun_kata",
-                tanya: "Ikuti Pola: <b>قَالَ مُوسَى</b> (Musa berkata)<br>Susun kalimat: 'Isa berkata'",
+                tanya: "Ikuti Pola: <br><b>قَالَ مُوسَى</b><br> (Musa berkata)<br>Susun kalimat: 'Isa berkata'",
                 // Isa tanda rafa'nya tidak terlihat (muqaddarah)
                 opsi: ["قَالَ", "عِيسَى", "قَالَتْ"], 
                 kunci: ["قَالَ", "عِيسَى"]
@@ -286,11 +286,11 @@ const databaseSoal = {
             {
                 tipe: "pasangan",
                 tanya: "Jodohkan Fi'il dengan Fa'il yang sesuai:",
-                kiri: ["يَجْلِسُ (Lk)", "تَجْلِسُ (Pr)"],
+                kiri: ["يَجْلِسُ", "تَجْلِسُ"],
                 kanan: ["الْأُمُّ", "الْأَبُ"],
                 kunci: { 
-                    "يَجْلِسُ (Lk)": "الْأَبُ", 
-                    "تَجْلِسُ (Pr)": "الْأُمُّ" 
+                    "يَجْلِسُ": "الْأَبُ", 
+                    "تَجْلِسُ": "الْأُمُّ" 
                 }
             }
         ]
