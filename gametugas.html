@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mengerjakan Tugas</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* --- STYLE DASAR (TEMA ORANYE) --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #fff7ed; color: #333; display: flex; justify-content: center; min-height: 100vh; overflow: hidden; }
+        
+        #app-container {
+            width: 100%; max-width: 480px; background: white;
+            display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+            position: relative;
+        }
+
+        /* HEADER */
+        header { padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #fed7aa; background: #fff7ed; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #9a3412; }
+        .progress-container { flex: 1; height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: #f97316; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); } /* Oranye */
+
+        /* AREA KONTEN */
+        main { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; align-items: center; }
+        
+        /* MEDIA WRAPPER */
+        .media-wrapper { width: 100%; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .q-image { max-width: 100%; max-height: 200px; border-radius: 12px; border: 2px solid #fed7aa; object-fit: contain; }
+        .audio-control-box { width: 100%; background: #fff7ed; border: 2px solid #fed7aa; padding: 15px; border-radius: 15px; text-align: center; }
+        .btn-replay { background: #ea580c; color: white; border: none; padding: 10px 20px; border-radius: 20px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; }
+
+        /* PERTANYAAN */
+        .question-text { font-size: 1.25rem; font-weight: bold; margin-bottom: 25px; line-height: 1.4; text-align: center; color: #7c2d12; width: 100%; }
+
+        /* OPSI JAWABAN */
+        #options-area { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        .opt-btn { padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 16px; background: white; font-size: 1.1rem; cursor: pointer; text-align: left; transition: all 0.2s; font-weight: 600; box-shadow: 0 4px 0 #e2e8f0; width: 100%; }
+        .opt-btn.selected { border-color: #f97316; background: #ffedd5; color: #c2410c; transform: translateY(2px); box-shadow: 0 2px 0 #f97316; }
+
+        /* FOOTER */
+        footer { padding: 20px; border-top: 1px solid #e2e8f0; background: white; width: 100%; }
+        #btn-check { width: 100%; padding: 16px; border: none; border-radius: 16px; background: #f97316; color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0 #c2410c; display: none; }
+
+        /* TIPE: SUSUN KATA (ARABIC RTL) */
+        .answer-area { 
+            min-height: 80px; border-bottom: 2px dashed #cbd5e1; margin-bottom: 20px; 
+            display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; justify-content: center; width: 100%; 
+            direction: rtl; /* Kanan ke Kiri */
+            background-color: #f8fafc; border-radius: 12px;
+        }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .word-chip { 
+            padding: 10px 18px; background: white; border: 2px solid #e2e8f0; border-radius: 10px; 
+            cursor: pointer; font-weight: bold; box-shadow: 0 3px 0 #e2e8f0; 
+            font-family: "Traditional Arabic", serif; font-size: 1.5rem; line-height: 1;
+        }
+        .word-chip.used { opacity: 0.3; cursor: default; transform: scale(0.95); box-shadow: none; }
+        
+        /* TIPE: MATCHING */
+        .pair-container { display: flex; gap: 10px; width: 100%; }
+        .pair-column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .pair-item { padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; background: white; font-weight: bold; }
+        .pair-item.selected { border-color: #f97316; background: #ffedd5; color: #c2410c; }
+        .pair-item.matched { visibility: hidden; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <button class="btn-close" onclick="keluarGame()">✕</button>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="xp-display" style="font-weight: bold; color: #f59e0b;">⚡ 0</div>
+    </header>
+
+    <main id="game-content">
+        <div id="media-wrapper" class="media-wrapper"></div>
+        <div id="question-text" class="question-text"></div>
+        <div id="options-area"></div>
+    </main>
+
+    <footer>
+        <button id="btn-check" onclick="prosesJawaban()">PERIKSA</button>
+    </footer>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+        authDomain: "durusul-lughoh-online.firebaseapp.com",
+        projectId: "durusul-lughoh-online",
+        storageBucket: "durusul-lughoh-online.firebasestorage.app",
+        messagingSenderId: "260425044938",
+        appId: "1:260425044938:web:88d956d2cac35331887533",
+        measurementId: "G-8NR5K1NKPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- SETUP KHUSUS TUGAS ---
+    const urlParams = new URLSearchParams(window.location.search);
+    const levelId = parseInt(urlParams.get('level')) || 1;
+    
+    // SAVE KE FIELD 'tugas_progress' & KEMBALI KE 'tugas.html'
+    const DB_FIELD = 'tugas_progress'; 
+    const BACK_LINK = 'tugas.html';
+
+    // --- DATABASE SOAL TUGAS (8 CONTOH SOAL VARIASI) ---
+    const databaseSoal = {
+        level_1: [
+            // 1. PILIH SATU + GAMBAR (Vocab)
+            { 
+                tipe: "pilih_satu",
+                tanya: "Apa bahasa Arab dari gambar ini?",
+                gambar: "https://cdn-icons-png.flaticon.com/512/2602/2602414.png", // Gambar Masjid
+                opsi: ["مَسْجِدٌ (Masjid)", "بَيْتٌ (Rumah)", "مَدْرَسَةٌ (Sekolah)"],
+                kunci: "مَسْجِدٌ (Masjid)"
+            },
+            
+            // 2. BENAR SALAH (Konsep)
+            { 
+                tipe: "benar_salah",
+                tanya: "Kata 'Yaktubu' (يَكْتُبُ) adalah Isim (Kata Benda).",
+                kunci: false // Salah, karena itu Fi'il (Kata Kerja)
+            },
+
+            // 3. SUSUN KATA (Kalimat Sempurna - RTL)
+            { 
+                tipe: "susun_kata",
+                tanya: "Susun kalimat: 'Saya pergi ke pasar'",
+                // Kunci: [Kanan, ..., Kiri]
+                opsi: ["إِلَى", "أَذْهَبُ", "السُّوقِ"], 
+                kunci: ["أَذْهَبُ", "إِلَى", "السُّوقِ"] 
+            },
+
+            // 4. AUDIO CHOICE (Menyimak)
+            { 
+                tipe: "pilih_satu",
+                tanya: "Dengarkan! Apa arti kata yang diucapkan?",
+                audio: "audio/kitabun.mp3", // Pastikan file ada/gunakan dummy
+                opsi: ["Buku", "Pena", "Kertas"],
+                kunci: "Buku"
+            },
+
+            // 5. MATCHING (Lawan Kata)
+            { 
+                tipe: "pasangan",
+                tanya: "Pasangkan kata dengan lawan katanya:",
+                kiri: ["كَثِيرٌ (Banyak)", "كَبِيرٌ (Besar)"],
+                kanan: ["قَلِيلٌ (Sedikit)", "صَغِيرٌ (Kecil)"],
+                kunci: { 
+                    "كَثِيرٌ (Banyak)": "قَلِيلٌ (Sedikit)", 
+                    "كَبِيرٌ (Besar)": "صَغِيرٌ (Kecil)" 
+                }
+            },
+
+            // 6. PILIH BANYAK (Kategori Kata)
+            { 
+                tipe: "pilih_banyak",
+                tanya: "Pilih semua yang termasuk HARF JAR (Kata Depan):",
+                opsi: ["فِي (Di)", "مُحَمَّدٌ", "عَلَى (Di atas)", "يَجْلِسُ"],
+                kunci: ["فِي (Di)", "عَلَى (Di atas)"]
+            },
+
+            // 7. PILIH SATU (Terjemahan)
+            {
+                tipe: "pilih_satu",
+                tanya: "Terjemahkan: 'هَذَا مُدَرِّسٌ'",
+                opsi: ["Ini guru (lk)", "Ini guru (pr)", "Itu murid"],
+                kunci: "Ini guru (lk)"
+            },
+
+            // 8. SUSUN KATA (Ayat/Frasa Pendek)
+            {
+                tipe: "susun_kata",
+                tanya: "Susun frasa: 'Allah Maha Besar'",
+                opsi: ["أَكْبَرُ", "اللَّهُ"],
+                kunci: ["اللَّهُ", "أَكْبَرُ"]
+            }
+        ]
+        // Tambahkan level_2, level_3 dst...
+    };
+
+    let soalSekarang = 0; let xpDidapat = 0; let skorPerSoal = 10; let isReplay = false;
+    let pilihanUser = null; let currentUser = null; let activeAudio = null;
+
+    const daftarSoal = databaseSoal[`level_${levelId}`] || [];
+
+    const sfxPop = new Audio("audio/pop.mp3");
+    const sfxBenar = new Audio("audio/benar.mp3");
+    const sfxError = new Audio("audio/error.mp3");
+    const sfxSelesai = new Audio("audio/selesai.mp3");
+    const isSoundOn = localStorage.getItem('pref_sound') !== 'false';
+
+    function playSfx(type) {
+        if (!isSoundOn) return;
+        if (type === 'pop') { sfxPop.currentTime=0; sfxPop.play().catch(()=>{}); }
+        if (type === 'benar') sfxBenar.play();
+        if (type === 'error') sfxError.play();
+        if (type === 'selesai') sfxSelesai.play();
+    }
+
+    onAuthStateChanged(auth, async (user) => { 
+        if (user) {
+            currentUser = user;
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                const prog = snap.data()[DB_FIELD] || 1; 
+                if (levelId < prog) { isReplay = true; skorPerSoal = 5; }
+            }
+            muatSoal(); 
+        } else { window.location.href = 'index.html'; }
+    });
+
+    window.muatSoal = function() {
+        if (soalSekarang >= daftarSoal.length) { levelSelesai(); return; }
+        const data = daftarSoal[soalSekarang];
+
+        const mediaWrap = document.getElementById('media-wrapper');
+        mediaWrap.innerHTML = ''; 
+        if(activeAudio) { activeAudio.pause(); activeAudio = null; }
+
+        if (data.gambar) mediaWrap.innerHTML += `<img src="${data.gambar}" class="q-image" alt="Soal">`;
+        if (data.audio) {
+            activeAudio = new Audio(data.audio);
+            mediaWrap.innerHTML += `<div class="audio-control-box"><button class="btn-replay" onclick="putarAudioSoal()">🔊 Dengarkan</button></div>`;
+            activeAudio.play().catch(()=>{});
+        }
+
+        document.getElementById('question-text').innerText = data.tanya || "";
+        const area = document.getElementById('options-area');
+        area.innerHTML = ''; pilihanUser = null;
+        document.getElementById('btn-check').style.display = 'none';
+
+        if (data.tipe === "pilih_satu") renderPilihSatu(data);
+        else if (data.tipe === "pilih_banyak") renderPilihBanyak(data);
+        else if (data.tipe === "benar_salah") renderBenarSalah(data);
+        else if (data.tipe === "susun_kata") renderSusunKata(data);
+        else if (data.tipe === "pasangan") renderPasangan(data);
+
+        document.getElementById('progress-bar').style.width = (soalSekarang / daftarSoal.length) * 100 + "%";
+    }
+
+    window.putarAudioSoal = () => { if (activeAudio) { activeAudio.currentTime = 0; activeAudio.play(); } };
+
+    function renderPilihSatu(data) {
+        data.opsi.forEach(teks => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = teks;
+            btn.onclick = () => { playSfx('pop'); document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); pilihanUser = teks; document.getElementById('btn-check').style.display = 'block'; };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    function renderBenarSalah(data) {
+        [{t:'BENAR', v:true}, {t:'SALAH', v:false}].forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = o.t;
+            btn.onclick = () => { playSfx('pop'); document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); btn.classList.add('selected'); pilihanUser = o.v; document.getElementById('btn-check').style.display = 'block'; };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    function renderPilihBanyak(data) {
+        pilihanUser = [];
+        data.opsi.forEach(teks => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = teks;
+            btn.onclick = () => {
+                playSfx('pop');
+                if(btn.classList.contains('selected')) { btn.classList.remove('selected'); pilihanUser = pilihanUser.filter(i => i !== teks); }
+                else { btn.classList.add('selected'); pilihanUser.push(teks); }
+                document.getElementById('btn-check').style.display = pilihanUser.length > 0 ? 'block' : 'none';
+            };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    function renderSusunKata(data) {
+        pilihanUser = [];
+        const area = document.getElementById('options-area');
+        const ansArea = document.createElement('div'); ansArea.className = 'answer-area';
+        const bank = document.createElement('div'); bank.className = 'word-bank';
+        data.opsi.forEach(w => {
+            const chip = document.createElement('div'); chip.className = 'word-chip'; chip.innerText = w;
+            chip.onclick = () => {
+                playSfx('pop'); chip.classList.add('used');
+                const clone = chip.cloneNode(true); clone.classList.remove('used');
+                clone.onclick = () => { playSfx('pop'); chip.classList.remove('used'); clone.remove(); pilihanUser = pilihanUser.filter(x => x !== w); if(pilihanUser.length === 0) document.getElementById('btn-check').style.display='none'; };
+                ansArea.appendChild(clone); pilihanUser.push(w);
+                document.getElementById('btn-check').style.display = 'block';
+            };
+            bank.appendChild(chip);
+        });
+        area.appendChild(ansArea); area.appendChild(bank);
+    }
+
+    function renderPasangan(data) {
+        pilihanUser = { k: null, v: null };
+        const area = document.getElementById('options-area');
+        const container = document.createElement('div'); container.className = 'pair-container';
+        const colL = document.createElement('div'); colL.className = 'pair-column';
+        const colR = document.createElement('div'); colR.className = 'pair-column';
+        data.kiri.forEach(txt => {
+            const item = document.createElement('div'); item.className = 'pair-item'; item.innerText = txt;
+            item.onclick = () => { playSfx('pop'); document.querySelectorAll('.pair-column:first-child .pair-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); pilihanUser.k = txt; cekPasangan(data); };
+            colL.appendChild(item);
+        });
+        data.kanan.forEach(txt => {
+            const item = document.createElement('div'); item.className = 'pair-item'; item.innerText = txt;
+            item.onclick = () => { playSfx('pop'); document.querySelectorAll('.pair-column:last-child .pair-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); pilihanUser.v = txt; cekPasangan(data); };
+            colR.appendChild(item);
+        });
+        container.appendChild(colL); container.appendChild(colR); area.appendChild(container);
+    }
+    
+    function cekPasangan(data) {
+        if (pilihanUser.k && pilihanUser.v) {
+            if (data.kunci[pilihanUser.k] === pilihanUser.v) {
+                playSfx('pop');
+                document.querySelectorAll('.pair-item.selected').forEach(i => { i.classList.add('matched'); i.classList.remove('selected'); });
+                pilihanUser = { k: null, v: null };
+                if (document.querySelectorAll('.pair-item:not(.matched)').length === 0) { document.getElementById('btn-check').style.display = 'block'; pilihanUser = "DONE"; }
+            } else { setTimeout(() => { document.querySelectorAll('.pair-item').forEach(i => i.classList.remove('selected')); pilihanUser = { k: null, v: null }; }, 300); }
+        }
+    }
+
+    window.prosesJawaban = () => {
+        const data = daftarSoal[soalSekarang];
+        let benar = false;
+
+        if (data.tipe === "pilih_satu" || data.tipe === "benar_salah") benar = (pilihanUser === data.kunci);
+        else if (data.tipe === "pilih_banyak") benar = data.kunci.every(k => pilihanUser.includes(k)) && data.kunci.length === pilihanUser.length;
+        else if (data.tipe === "susun_kata") benar = JSON.stringify(pilihanUser) === JSON.stringify(data.kunci);
+        else if (data.tipe === "pasangan") benar = (pilihanUser === "DONE");
+
+        if (benar) {
+            playSfx('benar'); xpDidapat += skorPerSoal;
+            document.getElementById('xp-display').innerText = "⚡ " + xpDidapat;
+            Swal.fire({ title: 'Benar!', icon: 'success', timer: 1000, showConfirmButton: false, position: 'top' });
+        } else {
+            playSfx('error');
+            const kunciStr = Array.isArray(data.kunci) ? data.kunci.join(" ") : data.kunci;
+            Swal.fire({ title: 'Kurang Tepat', text: `Kunci: ${JSON.stringify(data.kunci)}`, icon: 'error', confirmButtonColor: '#ef4444' });
+        }
+        soalSekarang++; setTimeout(muatSoal, 1200);
+    };
+
+    async function levelSelesai() {
+        playSfx('selesai');
+        if (currentUser && xpDidapat > 0) {
+            const ref = doc(db, "users", currentUser.uid);
+            try {
+                const snap = await getDoc(ref);
+                const lama = snap.data();
+                let update = { total_xp: (lama.total_xp||0) + xpDidapat };
+                const progLama = lama[DB_FIELD] || 1;
+                if (levelId >= progLama) { update[DB_FIELD] = levelId + 1; }
+                await updateDoc(ref, update);
+            } catch (e) { console.error(e); }
+        }
+        Swal.fire({ title: 'Selesai!', html: `Tugas ${levelId} Tuntas!<br>+${xpDidapat} XP`, icon: 'success', confirmButtonText: 'Lanjut', confirmButtonColor: '#f97316', allowOutsideClick: false }).then(() => { window.location.href = BACK_LINK; });
+    }
+
+    window.keluarGame = () => { Swal.fire({ title: 'Keluar?', text: "Poin hilang.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya' }).then(r => { if(r.isConfirmed) window.location.href = BACK_LINK }); };
+</script>
+</body>
+</html>
