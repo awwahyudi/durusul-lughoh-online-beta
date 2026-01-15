@@ -3,47 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Nahwu</title>
+    <title>Nahwu - BAIM</title>
     <style>
         /* --- RESET & BASIC STYLE --- */
         * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #f0fdf4; color: #333; display: flex; justify-content: center; min-height: 100vh; overscroll-behavior-y: none; }
         
-        /* --- LOADING SCREEN (Baru: Mencegah Flash) --- */
+        /* --- LOADING SCREEN --- */
         #loading-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; z-index: 2000; /* Paling atas di atas segalanya */
+            background: white; z-index: 2000;
             display: flex; justify-content: center; align-items: center;
             flex-direction: column;
         }
         .spinner {
             width: 40px; height: 40px;
-            border: 4px solid #f3f3f3; border-top: 4px solid #16a34a; /* Hijau */
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
+            border: 4px solid #f3f3f3; border-top: 4px solid #16a34a;
+            border-radius: 50%; animation: spin 1s linear infinite;
             margin-bottom: 15px;
         }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         /* --- MOBILE CONTAINER FRAME --- */
         #app-container {
-            width: 100%;
-            max-width: 480px;
-            background: white;
-            position: relative;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-            display: flex;
-            flex-direction: column;
-            height: 100vh; 
-            height: 100dvh; 
-            overflow: hidden;
+            width: 100%; max-width: 480px; background: white;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden;
         }
 
-        /* --- LAYAR LOGIN (Sekarang Hidden Default) --- */
+        /* --- LAYAR LOGIN --- */
         #login-screen {
-            display: none; /* Default SEMBUNYI, biar gak kedip */
-            
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #16a34a, #15803d);
             flex-direction: column; justify-content: center; align-items: center;
             z-index: 100; padding: 30px; text-align: center; color: white;
@@ -53,41 +43,31 @@
         .logo-area p { font-size: 1.1rem; opacity: 0.9; }
 
         .btn-google {
-            background: white; color: #555;
-            padding: 12px 25px;
-            border-radius: 50px; border: none;
-            font-weight: 600; font-size: 1rem;
+            background: white; color: #555; padding: 12px 25px;
+            border-radius: 50px; border: none; font-weight: 600; font-size: 1rem;
             display: flex; align-items: center; gap: 12px;
-            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.2s;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: transform 0.2s;
         }
         .btn-google:active { transform: scale(0.95); }
         .google-icon-svg { width: 24px; height: 24px; }
 
         /* --- DASHBOARD AREA --- */
-        #dashboard-screen {
-            display: none; flex-direction: column;
-            height: 100%;
-        }
+        #dashboard-screen { display: none; flex-direction: column; height: 100%; }
 
-        /* Header Melayang */
         header {
             position: fixed; top: 0; width: 100%; max-width: 480px;
             padding: 15px 20px; background: white; border-bottom: 2px solid #e5e7eb;
-            display: flex; justify-content: space-between; align-items: center;
-            z-index: 1001;
+            display: flex; justify-content: space-between; align-items: center; z-index: 1001;
         }
 
-        .xp-points { font-weight: bold; color: #f59e0b; display: flex; align-items: center; gap: 5px; }
         .premium-badge { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; display: none; }
+        .btn-gear { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
 
-        /* Main Content */
         main {
             flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc;
             padding-top: 90px; padding-bottom: 100px;
         }
 
-        /* Card & UI Elements */
         .page-section { display: none; animation: fadeIn 0.3s; }
         .page-section.active { display: block; }
         
@@ -95,97 +75,85 @@
             background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px;
             border-bottom: 4px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
         }
-        .level-card:active { transform: translateY(2px); border-bottom: 2px solid #cbd5e1; } /* Efek klik card */
+        .level-card:active { transform: translateY(2px); border-bottom: 2px solid #cbd5e1; }
 
         .level-info h3 { margin-bottom: 5px; color: #15803d; }
         .level-info p { font-size: 0.9rem; color: #64748b; }
-        /* --- TAMPILAN TERKUNCI (LOCKED MODE) --- */
+
+        /* --- TAMPILAN TERKUNCI --- */
         .level-card.locked-mode {
-            background-color: #f8fafc !important; /* Background Abu-abu Pucat */
-            border-bottom-color: #cbd5e1 !important; /* Border Abu */
-            position: relative;
+            background-color: #f8fafc !important; border-bottom-color: #cbd5e1 !important; position: relative;
         }
+        .level-card.locked-mode h3, .level-card.locked-mode p, .level-card.locked-mode div { color: #94a3b8 !important; }
+        .level-card.locked-mode .lock-icon { color: #ef4444 !important; display: inline-block !important; margin-left: 5px; }
+        .level-card.locked-mode .btn-play { background: #cbd5e1 !important; border-bottom-color: #94a3b8 !important; color: #64748b !important; }
+        .level-card.locked-mode div[style*="font-size: 2.5rem"] { filter: grayscale(100%); opacity: 0.5; }        
 
-        /* Ubah warna teks jadi abu-abu */
-        .level-card.locked-mode h3, 
-        .level-card.locked-mode p,
-        .level-card.locked-mode div {
-            color: #94a3b8 !important; 
-        }
-
-        /* Ikon Gembok Tetap Merah/Gelap Biar Kelihatan */
-        .level-card.locked-mode .lock-icon {
-            color: #ef4444 !important; /* Merah */
-            display: inline-block !important; /* Paksa muncul */
-            margin-left: 5px;
-        }
-
-        /* Tombol jadi abu-abu */
-        .level-card.locked-mode .btn-play {
-            background: #cbd5e1 !important;
-            border-bottom-color: #94a3b8 !important;
-            color: #64748b !important;
-            cursor: pointer; /* Tetap bisa diklik untuk memunculkan popup upgrade */
-        }
-
-        /* Efek Grayscale (Hitam Putih) untuk Emoji/Gambar */
-        .level-card.locked-mode div[style*="font-size: 2.5rem"] {
-            filter: grayscale(100%);
-            opacity: 0.5;
-        }        
         .btn-play {
             background: #16a34a; color: white; border: none; padding: 10px 20px;
             border-radius: 10px; font-weight: bold; border-bottom: 4px solid #14532d; cursor: pointer;
         }
         .btn-play:active { border-bottom: 0; transform: translateY(4px); }
 
-        /* Navbar Melayang */
+        /* --- LEADERBOARD STYLE --- */
+        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 10px; margin-bottom: 20px; padding-top: 10px; }
+        .podium-item { text-align: center; width: 30%; display: flex; flex-direction: column; align-items: center; }
+        
+        .avatar-circle { 
+            width: 50px; height: 50px; border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            font-weight: bold; font-size: 1.2rem; color: #555; background: #f1f5f9; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            position: relative; margin-bottom: 5px;
+        }
+        
+        /* Juara 1 */
+        .rank-1 .avatar-circle { width: 70px; height: 70px; background: #fffbeb; border-color: #fbbf24; color: #d97706; font-size: 1.8rem; z-index: 2; }
+        .rank-1 .p-name { font-weight: bold; color: #d97706; }
+        
+        /* Juara 2 & 3 */
+        .rank-2 .avatar-circle { border-color: #94a3b8; background: #f8fafc; color: #64748b; }
+        .rank-3 .avatar-circle { border-color: #fdba74; background: #fff7ed; color: #c2410c; }
+        
+        .p-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+        .p-xp { font-size: 0.75rem; color: #94a3b8; }
+
+        /* List Peringkat */
+        .rank-list-item { 
+            display: flex; align-items: center; background: white; padding: 12px; 
+            border-radius: 12px; margin-bottom: 8px; border: 1px solid #f1f5f9; 
+        }
+        .rank-list-item.me { border: 2px solid #2563eb; background: #eff6ff; }
+        
+        .r-num { font-weight: bold; width: 30px; text-align: center; color: #64748b; }
+        .r-info { flex: 1; margin-left: 10px; }
+        .r-xp { font-weight: bold; color: #f59e0b; }
+
+        /* --- NAVBAR --- */
         nav {
             position: fixed; bottom: 0; width: 100%; max-width: 480px;
             background: white; border-top: 1px solid #e5e7eb;
             display: flex; justify-content: space-around; padding: 10px 0;
             z-index: 1000; padding-bottom: env(safe-area-inset-bottom, 10px);
         }
-        .nav-item {
-            display: flex; flex-direction: column; align-items: center; color: #94a3b8;
-            cursor: pointer; font-size: 0.8rem; background: none; border: none;
-        }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #94a3b8; cursor: pointer; font-size: 0.8rem; background: none; border: none; }
         .nav-item span { font-size: 1.5rem; margin-bottom: 2px; }
         .nav-item.active { color: #16a34a; font-weight: bold; }
 
-        /* Profil */
+        /* --- PROFILE --- */
         .profile-header { text-align: center; margin-bottom: 20px; }
-        .avatar-container { 
-            width: 80px; height: 80px; margin: 0 auto 15px auto;
-            background: #dcfce7; border-radius: 50%; padding: 10px;
-            display: flex; justify-content: center; align-items: center;
-        }
+        .avatar-container { width: 80px; height: 80px; margin: 0 auto 15px auto; background: #dcfce7; border-radius: 50%; padding: 10px; display: flex; justify-content: center; align-items: center; }
         .avatar-svg { width: 100%; height: 100%; fill: #16a34a; }
         .btn-logout { width: 100%; padding: 15px; background: #ef4444; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px;}
 
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* --- TOGGLE SWITCH (PENGATURAN) --- */
-        .setting-item {
-            background: white; padding: 15px 20px; border-radius: 12px;
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; border: 1px solid #e2e8f0;
-        }
+        /* --- SETTINGS --- */
+        .setting-item { background: white; padding: 15px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border: 1px solid #e2e8f0; }
         .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
         .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc; transition: .4s; border-radius: 34px;
-        }
-        .slider:before {
-            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
-            background-color: white; transition: .4s; border-radius: 50%;
-        }
-        input:checked + .slider { background-color: #16a34a; } /* Warna Hijau saat ON */
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: #16a34a; }
         input:checked + .slider:before { transform: translateX(24px); }
 
-        /* Tombol Pengaturan di Header */
-        .btn-gear { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
@@ -214,7 +182,7 @@
     </div>
 
     <div id="dashboard-screen">
- <header>
+        <header>
             <div id="userDisplayName" style="font-weight: bold; font-size: 0.9rem;">Halo, User</div>
             <div style="display: flex; align-items: center; gap:10px;">
                 <span id="badgePremium" class="premium-badge">PREMIUM</span>
@@ -223,16 +191,14 @@
         </header>
 
         <main>
-<div id="page-home" class="page-section active">
+            <div id="page-home" class="page-section active">
                 <h2 style="margin-bottom: 20px; color: #166534;">Menu Utama</h2>
                 
                 <div id="card-pemula" class="level-card btn-effect" onclick="cekAkses('dl.html', true)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">📖</div> 
                         <div class="level-info">
-                            <h3 style="margin:0;">
-                                Pemula <span class="lock-icon" style="display:none;">🔒</span>
-                            </h3>
+                            <h3 style="margin:0;">Pemula <span class="lock-icon" style="display:none;">🔒</span></h3>
                             <p style="margin:0; font-size:0.85rem; color:#666;">Durusul Lughah</p>
                         </div>
                     </div>
@@ -243,9 +209,7 @@
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🚀</div> 
                         <div class="level-info">
-                            <h3 style="margin:0;">
-                                Lanjutan <span class="lock-icon" style="display:none;">🔒</span>
-                            </h3>
+                            <h3 style="margin:0;">Lanjutan <span class="lock-icon" style="display:none;">🔒</span></h3>
                             <p style="margin:0; font-size:0.85rem; color:#666;">Ilmu Nahwu</p>
                         </div>
                     </div>
@@ -268,9 +232,7 @@
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🎮</div> 
                         <div class="level-info">
-                            <h3 style="margin:0; color: #7e22ce;">
-                                Kosakata <span class="lock-icon" style="display:none;">🔒</span>
-                            </h3>
+                            <h3 style="margin:0; color: #7e22ce;">Kosakata <span class="lock-icon" style="display:none;">🔒</span></h3>
                             <p style="margin:0; font-size:0.85rem; color:#6b7280;">Game Hafalan</p>
                         </div>
                     </div>
@@ -278,9 +240,14 @@
                 </div>
             </div>
 
-            <div id="page-leaderboard" class="page-section">
-                <h2>Papan Peringkat 🏆</h2>
-                <p style="margin-top: 20px; color: #666;">Segera Hadir...</p>
+            <div id="page-leaderboard" class="page-section" style="padding-bottom: 80px;">
+                <h2 style="margin-bottom: 15px; color: #1e293b;">Papan Peringkat</h2>
+                
+                <div id="podium-area" class="podium-container">
+                    <div style="text-align:center; width:100%; color:#94a3b8;">Memuat data...</div>
+                </div>
+
+                <div id="rank-list-area"></div>
             </div>
 
             <div id="page-profile" class="page-section">
@@ -301,19 +268,17 @@
                     <p id="profileEmail" style="color:#666; font-size: 0.9rem;">user@email.com</p>
 
                     <div class="profile-stats" style="display: flex; gap: 15px; margin-top: 20px;">
-    <div style="flex: 1; background: #f0fdf4; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #dcfce7;">
-        <span style="font-size: 1.5rem;">🏆</span>
-        <p style="font-size: 0.8rem; color: #666;">Level Nahwu</p>
-        <h3 id="display-level">-</h3>
-    </div>
-    
-    <div style="flex: 1; background: #fffbeb; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #fef3c7;">
-        <span style="font-size: 1.5rem;">⚡</span>
-        <p style="font-size: 0.8rem; color: #666;">Total Skor XP</p>
-        <h3 id="display-xp">0</h3>
-    </div>
-</div>
-
+                        <div style="flex: 1; background: #f0fdf4; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #dcfce7;">
+                            <span style="font-size: 1.5rem;">🏆</span>
+                            <p style="font-size: 0.8rem; color: #666;">Level Nahwu</p>
+                            <h3 id="display-level">-</h3>
+                        </div>
+                        <div style="flex: 1; background: #fffbeb; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #fef3c7;">
+                            <span style="font-size: 1.5rem;">⚡</span>
+                            <p style="font-size: 0.8rem; color: #666;">Total Skor XP</p>
+                            <h3 id="display-xp">0</h3>
+                        </div>
+                    </div>
 
                     <div style="margin-top: 10px;">
                         <span id="badgeProfile" style="background:#e2e8f0; padding:5px 15px; border-radius:20px; font-size:0.8rem; font-weight: bold; color: #475569;">Free Member</span>
@@ -362,7 +327,7 @@
     // 1. IMPORT HARUS DI PALING ATAS
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
     import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
     // 2. Variabel Global Status Premium
     let statusMemberPremium = false;
@@ -415,22 +380,17 @@
                     premiumExpired: null,
                     nahwu_progress: 1,
                     dl_progress: 1,
+                    tugas_progress: 1,
                     total_xp: 0
                 });
-                docSnap = await getDoc(userRef); // Ambil ulang setelah dibuat
+                docSnap = await getDoc(userRef); 
             }
 
             const data = docSnap.data();
 
             // D. Tampilkan XP & Level
-            if(document.getElementById('display-level')) {
-                document.getElementById('display-level').innerText = data.nahwu_progress || 1;
-            }
-            if(document.getElementById('display-xp')) {
-                document.getElementById('display-xp').innerText = data.total_xp || 0;
-            }
-
-// ... (Kode sebelumnya sama) ...
+            if(document.getElementById('display-level')) document.getElementById('display-level').innerText = data.nahwu_progress || 1;
+            if(document.getElementById('display-xp')) document.getElementById('display-xp').innerText = data.total_xp || 0;
 
             // E. CEK STATUS PREMIUM (LOGIKA UTAMA & VISUAL)
             const now = new Date();
@@ -443,39 +403,34 @@
                 // --- USER PREMIUM ---
                 statusMemberPremium = true;
                 
-                // 1. Tampilkan Badge Premium
                 document.getElementById('badgePremium').style.display = 'inline-block';
                 document.getElementById('badgeProfile').innerText = "Premium Member";
                 document.getElementById('badgeProfile').style.background = "gold";
                 document.getElementById('badgeProfile').style.color = "#713f12";
 
-                // 2. Buka Kunci Visual (Hapus class locked-mode)
+                // Buka Kunci Visual (Hapus class locked-mode)
                 premiumCards.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.remove('locked-mode');
                 });
-
-                // Sembunyikan semua ikon gembok
                 document.querySelectorAll('.lock-icon').forEach(el => el.style.display = 'none');
 
             } else {
                 // --- USER GRATISAN ---
                 statusMemberPremium = false;
                 
-                // 1. Tampilkan Badge Free
                 document.getElementById('badgePremium').style.display = 'none';
                 document.getElementById('badgeProfile').innerText = "Free Member";
                 document.getElementById('badgeProfile').style.background = "#e2e8f0";
                 document.getElementById('badgeProfile').style.color = "#475569";
 
-                // 2. Kunci Visual (Tambah class locked-mode)
+                // Kunci Visual (Tambah class locked-mode)
                 premiumCards.forEach(id => {
                     const el = document.getElementById(id);
                     if(el) el.classList.add('locked-mode');
                 });
-                
-                // Ikon gembok akan muncul otomatis lewat CSS .locked-mode .lock-icon
             }
+
             // F. Tampilkan Dashboard
             loginScreen.style.display = 'none';
             dashboardScreen.style.display = 'flex';
@@ -488,20 +443,15 @@
     });
 
     // --- FUNGSI GATEKEEPER (PENGECEK AKSES) ---
-    // Dipanggil saat tombol menu diklik
     window.cekAkses = function(url, wajibPremium) {
-        // 1. Jika Menu Gratis (wajibPremium = false), langsung masuk
         if (!wajibPremium) {
             window.location.href = url;
             return;
         }
 
-        // 2. Jika Menu Berbayar, cek status member
         if (statusMemberPremium) {
-            // Sudah Premium -> Masuk
             window.location.href = url;
         } else {
-            // Belum Premium -> Tampilkan Pesan Upsell
             Swal.fire({
                 title: 'Konten Premium 🔒',
                 html: `Maaf, materi ini khusus member Premium.<br>Silakan upgrade akun antum.`,
@@ -518,12 +468,88 @@
         }
     }
 
-    // Navigasi Halaman (Home/Leaderboard/Profile)
+    // --- NAVIGASI HALAMAN (SPA) ---
     window.gantiHalaman = function(pageId, btnElement) {
-        document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelectorAll('.page-section').forEach(el => el.style.display = 'none');
+        document.getElementById('page-' + pageId).style.display = 'block';
+
         document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-        btnElement.classList.add('active');
+        if(btnElement) btnElement.classList.add('active');
+
+        // JIKA MASUK KE LEADERBOARD -> LOAD DATA
+        if (pageId === 'leaderboard') {
+            loadLeaderboard();
+        }
+    }
+
+    // --- FUNGSI LOAD LEADERBOARD ---
+    async function loadLeaderboard() {
+      const podiumArea = document.getElementById('podium-area');
+      const listArea = document.getElementById('rank-list-area');
+      const myUid = auth.currentUser ? auth.currentUser.uid : null;
+
+      try {
+          const q = query(collection(db, "users"), orderBy("total_xp", "desc"), limit(50));
+          const snap = await getDocs(q);
+          
+          const users = [];
+          snap.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
+
+          if (users.length === 0) {
+              podiumArea.innerHTML = "Belum ada data.";
+              listArea.innerHTML = "";
+              return;
+          }
+
+          // RENDER PODIUM (2-1-3)
+          let podiumHtml = '';
+          if(users[1]) podiumHtml += makePodiumHtml(users[1], 2);
+          else podiumHtml += '<div class="podium-item"></div>'; 
+          
+          if(users[0]) podiumHtml += makePodiumHtml(users[0], 1);
+          
+          if(users[2]) podiumHtml += makePodiumHtml(users[2], 3);
+          
+          podiumArea.innerHTML = podiumHtml;
+
+          // RENDER LIST (4+)
+          let listHtml = '';
+          for (let i = 3; i < users.length; i++) {
+              const u = users[i];
+              const isMe = (u.id === myUid) ? 'me' : '';
+              const nama = u.nama || "User";
+              
+              listHtml += `
+                <div class="rank-list-item ${isMe}">
+                    <div class="r-num">${i+1}</div>
+                    <div class="avatar-circle" style="width:35px; height:35px; font-size:0.8rem; margin:0; background:#f1f5f9; border:none;">
+                        ${nama.charAt(0).toUpperCase()}
+                    </div>
+                    <div class="r-info">
+                        <div style="font-weight:600; font-size:0.9rem;">${nama}</div>
+                        <div style="font-size:0.75rem; color:#94a3b8;">Level ${u.nahwu_progress||1}</div>
+                    </div>
+                    <div class="r-xp">${u.total_xp||0} XP</div>
+                </div>`;
+          }
+          listArea.innerHTML = listHtml;
+
+      } catch (error) {
+          console.error(error);
+          if(error.message.includes("index")) {
+              podiumArea.innerHTML = `<a href="#" style="color:red; font-size:0.7rem;">Admin: Klik Link di Console (F12) untuk buat Index</a>`;
+          }
+      }
+    }
+
+    function makePodiumHtml(u, rank) {
+        const nama = (u.nama || "User").split(" ")[0];
+        return `
+          <div class="podium-item rank-${rank}">
+              <div class="avatar-circle">${nama.charAt(0).toUpperCase()}</div>
+              <div class="p-name">${nama}</div>
+              <div class="p-xp">${u.total_xp||0} XP</div>
+          </div>`;
     }
 
     // --- FITUR GANTI NAMA ---
@@ -614,8 +640,4 @@
 </script>
 
 </body>
-
 </html>
-
-
-
