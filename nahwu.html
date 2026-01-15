@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Peta Belajar Nahwu</title>
+    <style>
+        /* --- STYLE DASAR --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f0fdf4; color: #333; display: flex; justify-content: center; min-height: 100vh; }
+        
+        #app-container {
+            width: 100%; max-width: 480px; background: white;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+        }
+
+        header {
+            padding: 15px 20px; background: white; border-bottom: 1px solid #e5e7eb;
+            display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100;
+        }
+        .btn-back { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+        /* --- TABS NAVIGASI (SCROLLABLE) --- */
+        .tabs-container {
+            display: flex; gap: 10px; padding: 10px 15px;
+            background: white; border-bottom: 1px solid #e2e8f0;
+            position: sticky; top: 60px; z-index: 90;
+            overflow-x: auto; /* Agar bisa digeser horizontal */
+            white-space: nowrap; /* Mencegah tombol turun ke bawah */
+            scrollbar-width: none; /* Sembunyikan scrollbar Firefox */
+        }
+        .tabs-container::-webkit-scrollbar { display: none; /* Sembunyikan scrollbar Chrome */ }
+
+/* UPDATE GAYA TAB (VERTIKAL) */
+        .tab-btn {
+            display: flex;             /* Mode Flexbox */
+            flex-direction: column;    /* Susun ke bawah (Ikon atas, Teks bawah) */
+            align-items: center;       /* Tengah secara horizontal */
+            justify-content: center;   /* Tengah secara vertikal */
+            
+            min-width: 90px;           /* Lebar minimal agar tidak gepeng */
+            height: 75px;              /* Tinggi seragam */
+            padding: 8px 5px;
+            
+            border: 1px solid #e2e8f0; 
+            background: #ffffff;
+            border-radius: 16px;       /* Lebih kotak sedikit dibanding pill */
+            
+            color: #64748b; 
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;            /* Agar tidak mengecil saat di-scroll */
+            gap: 5px;                  /* Jarak antara ikon dan teks */
+        }
+
+        .tab-btn.active {
+            background: #16a34a; 
+            color: white; 
+            border-color: #16a34a;
+            box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);
+            transform: translateY(-2px); /* Efek naik sedikit saat aktif */
+        }
+
+        /* --- AREA PETA --- */
+        #map-area {
+            flex: 1; overflow-y: auto; position: relative; background: #f8fafc;
+            scrollbar-width: none; -ms-overflow-style: none; 
+            opacity: 0; transition: opacity 0.5s;
+            padding-top: 20px;
+        }
+        #map-area.ready { opacity: 1; }
+        #map-area::-webkit-scrollbar { display: none; }
+
+        #path-svg { position: absolute; top: 0; left: 0; width: 100%; z-index: 0; pointer-events: none; }
+
+        /* NODE STYLE */
+        .map-node {
+            width: 60px; height: 60px; position: absolute; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; z-index: 2;
+            transition: transform 0.2s;
+            background: #e2e8f0; color: #94a3b8; box-shadow: 0 4px 0 #cbd5e1;
+        }
+        .map-node:active { transform: scale(0.9); }
+
+        /* 1. Level SELESAI */
+        .map-node.completed { background: #fbbf24; color: #ffffff; box-shadow: 0 4px 0 #d97706; }
+        .check-icon { font-size: 0.75rem; font-weight: 900; }
+
+        /* 2. Level AKTIF */
+        .map-node.active { 
+            background: #16a34a; color: white; box-shadow: 0 4px 0 #14532d; 
+            animation: pulse 2s infinite; z-index: 3; font-family: 'Segoe UI', sans-serif; font-size: 1.6rem;
+        }
+
+        /* 3. Level TERKUNCI */
+        .map-node.locked { background: #e2e8f0; color: #94a3b8; box-shadow: 0 4px 0 #cbd5e1; opacity: 1; }
+
+        .level-label {
+            position: absolute; background: white; padding: 3px 8px; border-radius: 6px;
+            font-size: 0.75rem; width: 90px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); pointer-events: none;
+            z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #475569;
+        }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(22, 163, 74, 0); } 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); } }
+
+        /* --- POPUP MODAL --- */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 2000;
+            display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s;
+        }
+        #modal-box {
+            background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 20px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: scale(0.8); opacity: 0; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #modal-overlay.show #modal-box { transform: scale(1); opacity: 1; }
+        .modal-icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; color: #333; }
+        .modal-desc { font-size: 0.9rem; color: #666; margin-bottom: 25px; line-height: 1.5; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 0.9rem; transition: transform 0.1s; }
+        .btn-modal:active { transform: scale(0.95); }
+        .btn-primary { background: #16a34a; color: white; box-shadow: 0 4px 0 #14532d; }
+        .btn-secondary { background: #f1f5f9; color: #64748b; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅️</button>
+        <h2 style="margin:0; font-size: 1.2rem;">Peta Nahwu</h2>
+    </header>
+
+  <div class="tabs-container">
+        <button class="tab-btn" onclick="gantiTab('mushtholahat')">
+            <span style="font-size: 0.75rem;">🧱</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">Mushtholahat</span>
+        </button>
+        
+        <button class="tab-btn" onclick="gantiTab('afal')">
+            <span style="font-size: 0.75rem;">⚡</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">I'rob Fi'il</span>
+        </button>
+        
+        <button class="tab-btn" onclick="gantiTab('marfuat')">
+            <span style="font-size: 0.75rem;">⬆️</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">Marfu'at</span>
+        </button>
+        
+        <button class="tab-btn" onclick="gantiTab('manshubat')">
+            <span style="font-size: 0.75rem;">🎯</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">Manshubat</span>
+        </button>
+        
+        <button class="tab-btn" onclick="gantiTab('majrurot')">
+            <span style="font-size: 0.75rem;">⚓</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">Majrurot</span>
+        </button>
+        
+        <button class="tab-btn" onclick="gantiTab('tawabi')">
+            <span style="font-size: 0.75rem;">👣</span>
+            <span style="font-size: 0.75rem; font-weight: 600;">Tawabi'</span>
+        </button>
+    </div>
+
+    <div id="map-area">
+        <svg id="path-svg"></svg>
+        <div id="nodes-container"></div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div id="modal-box">
+        <span id="m-icon" class="modal-icon">🔒</span>
+        <h3 id="m-title" class="modal-title">Judul</h3>
+        <p id="m-desc" class="modal-desc">Deskripsi</p>
+        <div id="m-actions" class="modal-btns"></div>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+    authDomain: "durusul-lughoh-online.firebaseapp.com",
+    projectId: "durusul-lughoh-online",
+    storageBucket: "durusul-lughoh-online.firebasestorage.app",
+    messagingSenderId: "260425044938",
+    appId: "1:260425044938:web:88d956d2cac35331887533",
+    measurementId: "G-8NR5K1NKPH"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentUserLevel = 1; 
+  
+  // --- DATA LEVEL LENGKAP (1-79) ---
+  const levels = [
+      { id: 1, title: "عِلْمُ النَّحْوِ" }, { id: 2, title: "الِاسْمُ (١)" }, { id: 3, title: "الِاسْمُ (٢)" }, { id: 4, title: "الْفِعْلُ" }, { id: 5, title: "الْحَرْفُ" },
+      { id: 6, title: "الْمُفْرَدُ وَالْمُثَنَّى" }, { id: 7, title: "جَمْعُ الْمُذَكَّرِ" }, { id: 8, title: "جَمْعُ الْمُؤَنَّثِ" }, { id: 9, title: "جَمْعُ التَّكْسِيرِ" }, { id: 10, title: "الْأَسْمَاءُ الْخَمْسَةُ" },
+      { id: 11, title: "الْمَقْصُورُ" }, { id: 12, title: "الْمَنْقُوصُ" }, { id: 13, title: "الْمَمْنُوعُ" }, { id: 14, title: "الْمُذَكَّرُ/الْمُؤَنَّثُ" }, { id: 15, title: "الْإِعْرَابُ وَالْبِنَاءُ" },
+      { id: 16, title: "إِعْرَابُ الِاسْمِ ١" }, { id: 17, title: "إِعْرَابُ الِاسْمِ ٢" }, { id: 18, title: "إِعْرَابُ الِاسْمِ ٣" }, { id: 19, title: "الِاسْمُ الْمَبْنِيُّ" },
+      
+      // I'ROB AL AF'AL (20-32)
+      { id: 20, title: "أَقْسَامُ الْفِعْلِ" }, { id: 21, title: "الْمَاضِي ١" }, { id: 22, title: "الْمَاضِي ٢" }, { id: 23, title: "الْمُضَارِعُ ١" }, { id: 24, title: "الْمُضَارِعُ ٢" },
+      { id: 25, title: "الْمُضَارِعُ ٣" }, { id: 26, title: "فِعْلُ الْأَمْرِ" }, { id: 27, title: "إِعْرَابُ الْفِعْلِ" }, { id: 28, title: "النَّوَاصِبُ ١" }, { id: 29, title: "النَّوَاصِبُ ٢" },
+      { id: 30, title: "الْجَوَازِمُ ١" }, { id: 31, title: "الْجَوَازِمُ ٢" }, { id: 32, title: "الْجَوَازِمُ ٣" }, 
+      
+      // MARFU'AT (33-46)
+      { id: 33, title: "الْمَرْفُوعَاتُ" }, { id: 34, title: "الْفَاعِلُ ١" }, { id: 35, title: "الْفَاعِلُ ٢" }, { id: 36, title: "نَائِبُ الْفَاعِلِ ١" }, { id: 37, title: "نَائِبُ الْفَاعِلِ ٢" }, 
+      { id: 38, title: "الْمُبْتَدَأُ ١" }, { id: 39, title: "الْمُبْتَدَأُ ٢" }, { id: 40, title: "الْخَبَرُ ١" }, { id: 41, title: "الْخَبَرُ ٢" }, { id: 42, title: "الْخَبَرُ ٣" }, 
+      { id: 43, title: "كَانَ ١" }, { id: 44, title: "كَانَ ٢" }, { id: 45, title: "إِنَّ ١" }, { id: 46, title: "إِنَّ ٢" },
+
+      // MANSHUBAT (47-60)
+      { id: 47, title: "الْمَنْصُوبَاتُ" }, { id: 48, title: "الْمَفْعُولُ بِهِ ١" }, { id: 49, title: "الْمَفْعُولُ بِهِ ٢" }, { id: 50, title: "الْمَفْعُولُ بِهِ ٣" }, { id: 51, title: "الْمَفْعُولُ لِأَجْلِهِ ١" },
+      { id: 52, title: "الْمَفْعُولُ لِأَجْلِهِ ٢" }, { id: 53, title: "الظَّرْفُ ١" }, { id: 54, title: "ظَرْفُ الزَّمَانِ" }, { id: 55, title: "ظَرْفُ الْمَكَانِ" }, { id: 56, title: "الْمُطْلَقُ ١" },
+      { id: 57, title: "الْمُطْلَقُ ٢" }, { id: 58, title: "الْمَفْعُولُ مَعَهُ" }, { id: 59, title: "الْحَالُ" }, { id: 60, title: "التَّمْيِيزُ" }, 
+      
+      // MAJRUROT (61-71)
+      { id: 61, title: "الْمُسْتَثْنَى ١" }, { id: 62, title: "الْمُسْتَثْنَى ٢" }, { id: 63, title: "خَبَرُ كَانَ" }, { id: 64, title: "اسْمُ إِنَّ" }, { id: 65, title: "لَا النَّافِيَةُ" }, { id: 66, title: "الْمُنَادَى" },
+      { id: 67, title: "الْمَجْرُورَاتُ" }, { id: 68, title: "الْمَجْرُورُ بِالْحَرْفِ" }, { id: 69, title: "الْمَجْرُورُ بِالْإِضَافَةِ" }, { id: 70, title: "شُرُوطُ الْإِضَافَةِ" }, { id: 71, title: "التَّوَابِعُ" },
+      
+      // TAWABI' (72-79) -- NOTE: Tawabi masuk pembagian akhir sesuai request
+      { id: 72, title: "النَّعْتُ ١" }, { id: 73, title: "النَّعْتُ ٢" }, { id: 74, title: "الْعَطْفُ ١" }, { id: 75, title: "الْعَطْفُ ٢" }, { id: 76, title: "التَّوْكِيدُ ١" },
+      { id: 77, title: "التَّوْكِيدُ ٢" }, { id: 78, title: "الْبَدَلُ ١" }, { id: 79, title: "الْبَدَلُ ٢" }
+  ];
+
+  // --- KELOMPOK TAB (PEMBAGIAN BARU) ---
+  const levelGroups = {
+      'mushtholahat': { start: 1, end: 19 },
+      'afal':         { start: 20, end: 32 },
+      'marfuat':      { start: 33, end: 46 },
+      'manshubat':    { start: 47, end: 60 },
+      'majrurot':     { start: 61, end: 71 },
+      'tawabi':       { start: 72, end: 79 }
+  };
+  
+  let currentTab = 'mushtholahat'; // Default tab
+
+  // --- FUNGSI GANTI TAB ---
+  window.gantiTab = function(tabName) {
+      currentTab = tabName;
+      
+      // Visual tombol aktif
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+          // Cek teks tombol atau buat mapping jika perlu, di sini kita cek manual via onClick
+      });
+      
+      // Update tombol aktif manual berdasarkan event click yang mentrigger fungsi ini
+      // Cara cepat: loop tombol dan cari yang onclick-nya mengandung nama tab
+      const buttons = document.querySelectorAll('.tab-btn');
+      buttons.forEach(btn => {
+         if (btn.getAttribute('onclick').includes(tabName)) {
+             btn.classList.add('active');
+             // Scroll tab ke tengah jika perlu (untuk UX mobile)
+             btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+         }
+      });
+
+      renderSnakeMap(); // Gambar ulang peta
+  };
+
+  // --- AUTH & LOAD DATA ---
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        currentUserLevel = (docSnap.exists() && docSnap.data().nahwu_progress) ? docSnap.data().nahwu_progress : 1;
+        
+        // LOGIKA AUTO-TAB: Buka tab sesuai level user saat ini
+        let foundTab = 'mushtholahat';
+        for (const [key, range] of Object.entries(levelGroups)) {
+            if (currentUserLevel >= range.start && currentUserLevel <= range.end) {
+                foundTab = key;
+                break;
+            }
+        }
+        // Jika sudah tamat (>79), tetap di tawabi atau tab terakhir
+        if (currentUserLevel > 79) foundTab = 'tawabi';
+        
+        gantiTab(foundTab);
+        
+    } else {
+        window.location.href = 'index.html';
+    }
+  });
+
+  // --- RENDER MAP DINAMIS ---
+  function renderSnakeMap() {
+      const container = document.getElementById('nodes-container');
+      const svgEl = document.getElementById('path-svg');
+      const mapArea = document.getElementById('map-area');
+      
+      container.innerHTML = ''; // Reset kontainer
+
+      // Filter Data Berdasarkan Tab
+      const range = levelGroups[currentTab];
+      const filteredLevels = levels.filter(l => l.id >= range.start && l.id <= range.end);
+
+      const nodeSize = 60; const cols = 3; // 3 Kolom biar lebih lega
+      const rowHeight = 120;
+      const screenWidth = mapArea.offsetWidth || window.innerWidth;
+      const contentWidth = Math.min(screenWidth, 480);
+      const colWidth = contentWidth / cols;
+
+      let nodesHtml = ''; let pathPoints = [];
+
+      filteredLevels.forEach((level, index) => {
+          // Snake Logic pada data yang difilter
+          const row = Math.floor(index / cols);
+          let col = (row % 2 === 0) ? (index % cols) : ((cols - 1) - (index % cols));
+          
+          const posX = (col * colWidth) + (colWidth / 2) - (nodeSize / 2);
+          const posY = 30 + (row * rowHeight);
+          pathPoints.push({ x: posX + (nodeSize/2), y: posY + (nodeSize/2) });
+
+          // Tentukan Status Visual Node
+          let statusClass = 'locked';
+          let content = '🔒';
+          let statusData = 'locked';
+
+          if (level.id < currentUserLevel) {
+              statusClass = 'completed';
+              content = '<span class="check-icon">✔</span>';
+              statusData = 'completed';
+          } else if (level.id === currentUserLevel) {
+              statusClass = 'active';
+              content = level.id;
+              statusData = 'active';
+          }
+
+          nodesHtml += `
+            <div id="node-${level.id}" class="map-node ${statusClass}" data-status="${statusData}" 
+                 style="left: ${posX}px; top: ${posY}px;" onclick="handlePopup(${level.id})">
+                ${content}
+            </div>
+            <div class="level-label" style="left: ${posX - 15}px; top: ${posY + 65}px;">${level.id}. ${level.title}</div>
+          `;
+      });
+
+      const totalHeight = 50 + (Math.ceil(filteredLevels.length / cols) * rowHeight) + 50;
+      container.style.height = totalHeight + "px";
+      svgEl.style.height = totalHeight + "px";
+      container.innerHTML = nodesHtml;
+
+      drawSnakePath(pathPoints);
+      
+      // Animasi Fade In
+      mapArea.classList.remove('ready');
+      setTimeout(() => mapArea.classList.add('ready'), 50);
+
+      // Scroll ke level aktif jika ada di tab ini
+      setTimeout(() => {
+          const activeNode = document.querySelector('.map-node.active');
+          if(activeNode) activeNode.scrollIntoView({behavior: "smooth", block: "center"});
+      }, 300);
+  }
+
+  function drawSnakePath(points) {
+      if (points.length < 2) { document.getElementById('path-svg').innerHTML = ''; return; }
+      let pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) pathD += ` L ${points[i].x} ${points[i].y}`;
+      document.getElementById('path-svg').innerHTML = `<path d="${pathD}" stroke="#cbd5e1" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" />`;
+  }
+
+  // --- LOGIKA POPUP MODAL ---
+  window.handlePopup = function(id) {
+      const levelData = levels.find(L => L.id === id);
+      const title = levelData ? levelData.title : "Level " + id;
+      const el = document.getElementById(`node-${id}`);
+      const status = el ? el.dataset.status : 'locked';
+
+      if (status === 'locked') showModal('locked', id, title);
+      else if (status === 'active') showModal('start', id, title);
+      else if (status === 'completed') showModal('replay', id, title);
+  }
+
+  function showModal(type, id, title) {
+      const overlay = document.getElementById('modal-overlay');
+      const icon = document.getElementById('m-icon');
+      const tit = document.getElementById('m-title');
+      const desc = document.getElementById('m-desc');
+      const actions = document.getElementById('m-actions');
+
+      actions.innerHTML = '';
+
+      if (type === 'locked') {
+          icon.innerHTML = '🔒'; tit.innerText = 'Terkunci';
+          desc.innerText = `Selesaikan level sebelumnya untuk membuka "${title}".`;
+          actions.innerHTML = `<button class="btn-modal btn-secondary" onclick="closeModal()">Oke</button>`;
+      } 
+      else if (type === 'start') {
+          icon.innerHTML = '🚀'; tit.innerText = `Level ${id}`;
+          desc.innerText = `Siap belajar "${title}"?`;
+          actions.innerHTML = `
+            <button class="btn-modal btn-secondary" onclick="closeModal()">Nanti</button>
+            <button class="btn-modal btn-primary" onclick="window.location.href='game.html?level=${id}'">Mulai</button>`;
+      } 
+      else if (type === 'replay') {
+          icon.innerHTML = '↺'; tit.innerText = 'Selesai';
+          desc.innerText = `Ulangi "${title}" untuk melancarkan hafalan?`;
+          actions.innerHTML = `
+            <button class="btn-modal btn-secondary" onclick="closeModal()">Tutup</button>
+            <button class="btn-modal btn-primary" style="background:#fbbf24; color:#78350f;" onclick="window.location.href='game.html?level=${id}'">Main Lagi</button>`;
+      }
+
+      overlay.style.display = 'flex';
+      setTimeout(() => overlay.classList.add('show'), 10);
+  }
+
+  window.closeModal = function() {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.classList.remove('show');
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+  }
+
+  // --- EFEK SUARA & KLIK ---
+  const soundPop = new Audio("audio/pop.mp3"); 
+  const isSoundOn = localStorage.getItem('pref_sound') !== 'false';
+  const isVibrateOn = localStorage.getItem('pref_vibrate') !== 'false';
+
+  function mainkanEfek() {
+      if (isSoundOn) { soundPop.currentTime = 0; soundPop.play().catch(e => {}); }
+      if (isVibrateOn && navigator.vibrate) navigator.vibrate(50);
+  }
+
+  document.addEventListener('click', function(e) {
+      if (e.target.closest('.map-node') || e.target.closest('.btn-back') || e.target.closest('.btn-modal') || e.target.closest('.tab-btn')) {
+          mainkanEfek();
+      }
+  });  
+</script>
+
+</body>
+</html>

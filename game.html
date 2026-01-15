@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bermain Nahwu</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        /* --- STYLE DASAR --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f8fafc; color: #333; display: flex; justify-content: center; min-height: 100vh; overflow: hidden; }
+        
+        #app-container {
+            width: 100%; max-width: 480px; background: white;
+            display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+            position: relative;
+        }
+
+        /* HEADER */
+        header { padding: 15px 20px; display: flex; align-items: center; gap: 15px; border-bottom: 1px solid #e2e8f0; }
+        .btn-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
+        .progress-container { flex: 1; height: 12px; background: #e2e8f0; border-radius: 10px; overflow: hidden; }
+        #progress-bar { width: 0%; height: 100%; background: #16a34a; transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+
+        /* AREA KONTEN UTAMA */
+        main { flex: 1; padding: 20px; display: flex; flex-direction: column; overflow-y: auto; align-items: center; }
+        
+        /* 1. MEDIA CONTAINER (Gambar/Video/Audio) */
+        .media-wrapper { width: 100%; margin-bottom: 15px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        
+        .q-image { 
+            max-width: 100%; max-height: 200px; border-radius: 12px; 
+            border: 2px solid #f1f5f9; object-fit: contain;
+        }
+        
+        .video-container {
+            width: 100%; position: relative; padding-bottom: 56.25%; /* 16:9 */
+            height: 0; overflow: hidden; border-radius: 12px; background: #000;
+        }
+        .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        /* Tombol Audio Khusus */
+        .audio-control-box {
+            width: 100%; background: #f0f9ff; border: 2px solid #bae6fd;
+            padding: 15px; border-radius: 15px; text-align: center;
+        }
+        .btn-replay {
+            background: #0284c7; color: white; border: none; padding: 10px 20px;
+            border-radius: 20px; font-weight: bold; cursor: pointer; font-size: 0.95rem;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 3px 0 #075985;
+        }
+        .btn-replay:active { transform: translateY(2px); box-shadow: none; }
+
+        /* 2. TEKS PERTANYAAN */
+        .question-text { 
+            font-size: 1.25rem; font-weight: bold; margin-bottom: 25px; 
+            line-height: 1.4; text-align: center; color: #1e293b; width: 100%;
+        }
+
+        /* 3. OPSI JAWABAN */
+        #options-area { width: 100%; display: flex; flex-direction: column; gap: 12px; }
+        
+        .opt-btn {
+            padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 16px;
+            background: white; font-size: 1.1rem; cursor: pointer; text-align: left;
+            transition: all 0.2s; font-weight: 600; box-shadow: 0 4px 0 #e2e8f0;
+            width: 100%; display: flex; align-items: center; gap: 10px;
+        }
+        .opt-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #e2e8f0; }
+        .opt-btn.selected { border-color: #16a34a; background: #f0fdf4; color: #16a34a; transform: translateY(2px); box-shadow: 0 2px 0 #16a34a; }
+
+        /* Footer */
+        footer { padding: 20px; border-top: 1px solid #e2e8f0; background: white; width: 100%; }
+        #btn-check { width: 100%; padding: 16px; border: none; border-radius: 16px; background: #16a34a; color: white; font-weight: bold; font-size: 1.1rem; cursor: pointer; box-shadow: 0 4px 0 #14532d; display: none; }
+
+        /* Support untuk tipe soal lain (susun kata/pasangan) */
+        .answer-area { min-height: 60px; border-bottom: 2px dashed #cbd5e1; margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; justify-content: center; width: 100%; }
+        .word-bank { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .word-chip { padding: 10px 15px; background: white; border: 2px solid #e2e8f0; border-radius: 10px; cursor: pointer; font-weight: bold; box-shadow: 0 3px 0 #e2e8f0; }
+        .word-chip.used { opacity: 0.3; cursor: default; }
+        .pair-container { display: flex; gap: 10px; width: 100%; }
+        .pair-column { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+        .pair-item { padding: 12px; border: 2px solid #e2e8f0; border-radius: 10px; text-align: center; cursor: pointer; background: white; }
+        .pair-item.selected { border-color: #16a34a; background: #f0fdf4; }
+        .pair-item.matched { visibility: hidden; }
+        
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <button class="btn-close" onclick="keluarGame()">✕</button>
+        <div class="progress-container">
+            <div id="progress-bar"></div>
+        </div>
+        <div id="xp-display" style="font-weight: bold; color: #f59e0b;">⚡ 0</div>
+    </header>
+
+    <main id="game-content">
+        <div id="media-wrapper" class="media-wrapper"></div>
+
+        <div id="question-text" class="question-text"></div>
+        
+        <div id="options-area"></div>
+    </main>
+
+    <footer>
+        <button id="btn-check" onclick="prosesJawaban()">PERIKSA</button>
+    </footer>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+        authDomain: "durusul-lughoh-online.firebaseapp.com",
+        projectId: "durusul-lughoh-online",
+        storageBucket: "durusul-lughoh-online.firebasestorage.app",
+        messagingSenderId: "260425044938",
+        appId: "1:260425044938:web:88d956d2cac35331887533",
+        measurementId: "G-8NR5K1NKPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // --- DATABASE SOAL FLEKSIBEL ---
+    const databaseSoal = {
+        level_1: [
+            // KASUS 1: AUDIO + TEKS (Multiple Choice)
+            { 
+                tipe: "pilih_satu", // Multiple choice biasa
+                tanya: "Apa yang diucapkan dalam audio ini?",
+                audio: "audio/kitabun.mp3", // Ada audionya
+                opsi: ["Buku (Kitabun)", "Pena (Qalamun)", "Pintu (Babun)"],
+                kunci: "Buku (Kitabun)"
+            },
+
+            // KASUS 2: GAMBAR + TEKS (Multiple Choice)
+            { 
+                tipe: "pilih_satu",
+                tanya: "Gambar manakah yang menunjukkan 'Masjid'?",
+                gambar: "https://cdn-icons-png.flaticon.com/512/2078/2078898.png", // Gambar ilustrasi
+                opsi: ["Masjid", "Rumah", "Sekolah"],
+                kunci: "Masjid"
+            },
+
+            // KASUS 3: VIDEO + TEKS (Benar Salah)
+            { 
+                tipe: "benar_salah",
+                tanya: "Berdasarkan video, Isim adalah kata kerja.",
+                video: "https://www.youtube.com/embed/dQw4w9WgXcQ", // Video embed
+                kunci: false
+            },
+
+            // KASUS 4: TEKS SAJA
+            { 
+                tipe: "pilih_banyak", 
+                tanya: "Pilih kata yang termasuk ISIM:", 
+                opsi: ["مُحَمَّدٌ", "عَلَى", "مَسْجِدٌ", "فِي"], 
+                kunci: ["مُحَمَّدٌ", "مَسْجِدٌ"] 
+            },
+
+            // KASUS 5: SUSUN KATA
+            { 
+                tipe: "susun_kata", 
+                tanya: "Susun kalimat berikut:", 
+                audio: "audio/kalimat_sempurna.mp3", // Bisa tambah audio juga di soal susun kata
+                opsi: ["جَالِسٌ", "مُحَمَّدٌ"], 
+                kunci: ["مُحَمَّدٌ", "جَالِسٌ"] 
+            }
+        ]
+    };
+
+    let soalSekarang = 0; let xpDidapat = 0; let skorPerSoal = 5; let isReplay = false;
+    let pilihanUser = null; let currentUser = null;
+    let activeAudio = null; // Menyimpan audio soal yang aktif
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const levelId = parseInt(urlParams.get('level')) || 1;
+    const daftarSoal = databaseSoal[`level_${levelId}`] || [];
+
+    // --- SOUND FX ---
+    const sfxPop = new Audio("audio/pop.mp3");
+    const sfxBenar = new Audio("audio/benar.mp3");
+    const sfxError = new Audio("audio/error.mp3");
+    const sfxSelesai = new Audio("audio/selesai.mp3");
+    const isSoundOn = localStorage.getItem('pref_sound') !== 'false';
+    
+    function playSfx(type) {
+        if (!isSoundOn) return;
+        if (type === 'pop') { sfxPop.currentTime=0; sfxPop.play().catch(()=>{}); }
+        if (type === 'benar') sfxBenar.play();
+        if (type === 'error') sfxError.play();
+        if (type === 'selesai') sfxSelesai.play();
+    }
+
+    onAuthStateChanged(auth, async (user) => { 
+        if (user) {
+            currentUser = user;
+            const ref = doc(db, "users", user.uid);
+            const snap = await getDoc(ref);
+            if (snap.exists()) {
+                if (levelId < (snap.data().nahwu_progress || 1)) { isReplay = true; skorPerSoal = 2; }
+            }
+            muatSoal(); 
+        } else { window.location.href = 'index.html'; }
+    });
+
+    // --- ENGINE UTAMA ---
+    window.muatSoal = function() {
+        if (soalSekarang >= daftarSoal.length) { levelSelesai(); return; }
+        const data = daftarSoal[soalSekarang];
+
+        // 1. RENDER MEDIA (Flexible)
+        const mediaWrap = document.getElementById('media-wrapper');
+        mediaWrap.innerHTML = ''; // Reset
+        if(activeAudio) { activeAudio.pause(); activeAudio = null; } // Stop audio sebelumnya
+
+        // A. Cek VIDEO
+        if (data.video) {
+            mediaWrap.innerHTML += `
+                <div class="video-container">
+                    <iframe src="${data.video}?controls=0&rel=0" frameborder="0" allowfullscreen></iframe>
+                </div>`;
+        }
+        
+        // B. Cek GAMBAR
+        if (data.gambar) {
+            mediaWrap.innerHTML += `<img src="${data.gambar}" class="q-image" alt="Soal">`;
+        }
+
+        // C. Cek AUDIO
+        if (data.audio) {
+            // Siapkan objek audio tapi tidak autoplay (browser policy)
+            activeAudio = new Audio(data.audio);
+            mediaWrap.innerHTML += `
+                <div class="audio-control-box">
+                    <button class="btn-replay" onclick="putarAudioSoal()">
+                        🔊 Dengarkan Ulang
+                    </button>
+                </div>`;
+            // Coba putar sekali otomatis
+            activeAudio.play().catch(() => console.log("Autoplay dicegah browser"));
+        }
+
+        // 2. RENDER TEKS TANYA
+        document.getElementById('question-text').innerText = data.tanya || "";
+
+        // 3. RENDER OPSI JAWABAN
+        const area = document.getElementById('options-area');
+        area.innerHTML = ''; 
+        pilihanUser = null;
+        document.getElementById('btn-check').style.display = 'none';
+
+        if (data.tipe === "pilih_satu") renderPilihSatu(data);
+        else if (data.tipe === "pilih_banyak") renderPilihBanyak(data);
+        else if (data.tipe === "benar_salah") renderBenarSalah(data);
+        else if (data.tipe === "susun_kata") renderSusunKata(data);
+        else if (data.tipe === "pasangan") renderPasangan(data);
+
+        document.getElementById('progress-bar').style.width = (soalSekarang / daftarSoal.length) * 100 + "%";
+    }
+
+    // Fungsi Global untuk tombol "Dengarkan Ulang"
+    window.putarAudioSoal = () => {
+        if (activeAudio) {
+            activeAudio.currentTime = 0;
+            activeAudio.play();
+        }
+    };
+
+    // --- RENDERER TIPE SOAL ---
+    
+    // Tipe: Multiple Choice (Pilih Satu)
+    function renderPilihSatu(data) {
+        data.opsi.forEach(teks => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = teks;
+            btn.onclick = () => { 
+                playSfx('pop'); 
+                document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); 
+                btn.classList.add('selected'); 
+                pilihanUser = teks; 
+                document.getElementById('btn-check').style.display = 'block'; 
+            };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    // Tipe: Multiple Select
+    function renderPilihBanyak(data) {
+        pilihanUser = [];
+        data.opsi.forEach(teks => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = teks;
+            btn.onclick = () => {
+                playSfx('pop');
+                if(btn.classList.contains('selected')) { 
+                    btn.classList.remove('selected'); 
+                    pilihanUser = pilihanUser.filter(i => i !== teks); 
+                } else { 
+                    btn.classList.add('selected'); 
+                    pilihanUser.push(teks); 
+                }
+                document.getElementById('btn-check').style.display = pilihanUser.length > 0 ? 'block' : 'none';
+            };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    // Tipe: Benar Salah
+    function renderBenarSalah(data) {
+        [{t:'BENAR', v:true}, {t:'SALAH', v:false}].forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = 'opt-btn'; btn.innerText = o.t;
+            btn.onclick = () => { 
+                playSfx('pop'); 
+                document.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('selected')); 
+                btn.classList.add('selected'); 
+                pilihanUser = o.v; 
+                document.getElementById('btn-check').style.display = 'block'; 
+            };
+            document.getElementById('options-area').appendChild(btn);
+        });
+    }
+
+    // Tipe: Susun Kata
+    function renderSusunKata(data) {
+        pilihanUser = [];
+        const area = document.getElementById('options-area');
+        const ansArea = document.createElement('div'); ansArea.className = 'answer-area';
+        const bank = document.createElement('div'); bank.className = 'word-bank';
+        data.opsi.forEach(w => {
+            const chip = document.createElement('div'); chip.className = 'word-chip'; chip.innerText = w;
+            chip.onclick = () => {
+                if(chip.classList.contains('used')) return;
+                playSfx('pop'); chip.classList.add('used');
+                const clone = chip.cloneNode(true); clone.classList.remove('used');
+                clone.onclick = () => { playSfx('pop'); chip.classList.remove('used'); clone.remove(); pilihanUser = pilihanUser.filter(x => x !== w); if(pilihanUser.length === 0) document.getElementById('btn-check').style.display='none'; };
+                ansArea.appendChild(clone); pilihanUser.push(w);
+                document.getElementById('btn-check').style.display = 'block';
+            };
+            bank.appendChild(chip);
+        });
+        area.appendChild(ansArea); area.appendChild(bank);
+    }
+
+    // Tipe: Pasangan
+    function renderPasangan(data) {
+        pilihanUser = { k: null, v: null };
+        const area = document.getElementById('options-area');
+        const container = document.createElement('div'); container.className = 'pair-container';
+        const colL = document.createElement('div'); colL.className = 'pair-column';
+        const colR = document.createElement('div'); colR.className = 'pair-column';
+        data.kiri.forEach(txt => {
+            const item = document.createElement('div'); item.className = 'pair-item'; item.innerText = txt;
+            item.onclick = () => { playSfx('pop'); document.querySelectorAll('.pair-column:first-child .pair-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); pilihanUser.k = txt; cekPasangan(data); };
+            colL.appendChild(item);
+        });
+        data.kanan.forEach(txt => {
+            const item = document.createElement('div'); item.className = 'pair-item'; item.innerText = txt;
+            item.onclick = () => { playSfx('pop'); document.querySelectorAll('.pair-column:last-child .pair-item').forEach(i => i.classList.remove('selected')); item.classList.add('selected'); pilihanUser.v = txt; cekPasangan(data); };
+            colR.appendChild(item);
+        });
+        container.appendChild(colL); container.appendChild(colR); area.appendChild(container);
+    }
+    
+    function cekPasangan(data) {
+        if (pilihanUser.k && pilihanUser.v) {
+            if (data.kunci[pilihanUser.k] === pilihanUser.v) {
+                playSfx('pop');
+                document.querySelectorAll('.pair-item.selected').forEach(i => { i.classList.add('matched'); i.classList.remove('selected'); });
+                pilihanUser = { k: null, v: null };
+                if (document.querySelectorAll('.pair-item:not(.matched)').length === 0) { document.getElementById('btn-check').style.display = 'block'; pilihanUser = "DONE"; }
+            } else { setTimeout(() => { document.querySelectorAll('.pair-item').forEach(i => i.classList.remove('selected')); pilihanUser = { k: null, v: null }; }, 300); }
+        }
+    }
+
+    window.prosesJawaban = () => {
+        const data = daftarSoal[soalSekarang];
+        let benar = false;
+
+        // Cek Jawaban berdasarkan tipe
+        if (data.tipe === "pilih_satu" || data.tipe === "benar_salah") benar = (pilihanUser === data.kunci);
+        else if (data.tipe === "pilih_banyak") benar = data.kunci.every(k => pilihanUser.includes(k)) && data.kunci.length === pilihanUser.length;
+        else if (data.tipe === "susun_kata") benar = JSON.stringify(pilihanUser) === JSON.stringify(data.kunci);
+        else if (data.tipe === "pasangan") benar = (pilihanUser === "DONE");
+
+        if (benar) {
+            playSfx('benar'); xpDidapat += skorPerSoal;
+            document.getElementById('xp-display').innerText = "⚡ " + xpDidapat;
+            Swal.fire({ title: 'Benar!', icon: 'success', timer: 1000, showConfirmButton: false, position: 'top' });
+        } else {
+            playSfx('error');
+            const kunciStr = Array.isArray(data.kunci) ? data.kunci.join(" ") : data.kunci;
+            Swal.fire({ title: 'Kurang Tepat', text: `Jawaban benar: ${kunciStr}`, icon: 'error', confirmButtonColor: '#ef4444' });
+        }
+        soalSekarang++; setTimeout(muatSoal, 1200);
+    };
+
+    async function levelSelesai() {
+        playSfx('selesai');
+        if (currentUser && xpDidapat > 0) {
+            const ref = doc(db, "users", currentUser.uid);
+            try {
+                const snap = await getDoc(ref);
+                const lama = snap.data();
+                let update = { total_xp: (lama.total_xp||0) + xpDidapat };
+                if (levelId >= (lama.nahwu_progress||1)) update.nahwu_progress = levelId + 1;
+                await updateDoc(ref, update);
+            } catch (e) { console.error(e); }
+        }
+        Swal.fire({ title: 'Mabruk!', html: `Level ${levelId} Selesai!<br>+${xpDidapat} XP`, icon: 'success', confirmButtonText: 'Lanjut', confirmButtonColor: '#16a34a', allowOutsideClick: false }).then(() => { window.location.href = 'nahwu.html'; });
+    }
+
+    window.keluarGame = () => { Swal.fire({ title: 'Keluar?', text: "Poin sesi ini hilang.", icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya' }).then(r => { if(r.isConfirmed) window.location.href='nahwu.html' }); };
+</script>
+</body>
+</html>

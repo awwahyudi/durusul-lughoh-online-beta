@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Durusul Lughah</title>
+    <style>
+        /* --- STYLE DASAR --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #eff6ff; color: #333; display: flex; justify-content: center; min-height: 100vh; }
+        
+        #app-container {
+            width: 100%; max-width: 480px; background: white;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            display: flex; flex-direction: column; height: 100vh; height: 100dvh;
+        }
+
+        header {
+            padding: 15px 20px; background: white; border-bottom: 1px solid #e5e7eb;
+            display: flex; align-items: center; gap: 15px; position: sticky; top: 0; z-index: 100;
+        }
+        .btn-back { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+
+        /* --- TABS NAVIGASI (VERTIKAL: IKON ATAS, TEKS BAWAH) --- */
+        .tabs-container {
+            display: flex; justify-content: center; gap: 10px; padding: 10px 15px;
+            background: white; border-bottom: 1px solid #e2e8f0;
+            position: sticky; top: 60px; z-index: 90;
+        }
+
+        .tab-btn {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-width: 90px; height: 75px; padding: 8px 5px;
+            border: 1px solid #bfdbfe; background: #f0f9ff;
+            border-radius: 16px; color: #475569; cursor: pointer;
+            transition: all 0.2s; flex: 1; /* Biar lebar merata */
+            gap: 5px;
+        }
+
+        .tab-btn.active {
+            background: #2563eb; color: white; border-color: #2563eb;
+            box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* --- AREA PETA --- */
+        #map-area {
+            flex: 1; overflow-y: auto; position: relative; background: #f8fafc;
+            scrollbar-width: none; opacity: 0; transition: opacity 0.5s; padding-top: 20px;
+        }
+        #map-area.ready { opacity: 1; }
+        #map-area::-webkit-scrollbar { display: none; }
+        #path-svg { position: absolute; top: 0; left: 0; width: 100%; z-index: 0; pointer-events: none; }
+
+        /* NODE STYLE */
+        .map-node {
+            width: 60px; height: 60px; position: absolute; border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            font-size: 1.2rem; font-weight: bold; cursor: pointer; z-index: 2;
+            transition: transform 0.2s;
+            background: #e2e8f0; color: #94a3b8; box-shadow: 0 4px 0 #cbd5e1;
+        }
+        .map-node:active { transform: scale(0.9); }
+
+        /* STATUS LEVEL */
+        .map-node.completed { background: #fbbf24; color: #ffffff; box-shadow: 0 4px 0 #d97706; }
+        .check-icon { font-size: 1.8rem; font-weight: 900; }
+
+        /* Level AKTIF (Biru) */
+        .map-node.active { 
+            background: #2563eb; color: white; box-shadow: 0 4px 0 #1e40af; 
+            animation: pulse 2s infinite; z-index: 3; font-family: 'Segoe UI', sans-serif; font-size: 1.6rem;
+        }
+
+        .map-node.locked { background: #e2e8f0; color: #94a3b8; box-shadow: 0 4px 0 #cbd5e1; opacity: 1; }
+
+        .level-label {
+            position: absolute; background: white; padding: 3px 8px; border-radius: 6px;
+            font-size: 0.75rem; width: 90px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); pointer-events: none;
+            z-index: 10; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #475569;
+        }
+
+        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); } 100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); } }
+
+        /* MODAL */
+        #modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(4px); z-index: 2000;
+            display: none; justify-content: center; align-items: center; animation: fadeIn 0.2s;
+        }
+        #modal-box {
+            background: white; width: 85%; max-width: 320px; padding: 25px; border-radius: 20px;
+            text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            transform: scale(0.8); opacity: 0; transition: all 0.3s;
+        }
+        #modal-overlay.show #modal-box { transform: scale(1); opacity: 1; }
+        .modal-icon { font-size: 3rem; margin-bottom: 10px; display: block; }
+        .modal-btns { display: flex; gap: 10px; justify-content: center; margin-top: 20px; }
+        .btn-modal { flex: 1; padding: 12px; border: none; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .btn-primary { background: #2563eb; color: white; box-shadow: 0 4px 0 #1e40af; } /* Tombol Biru */
+        .btn-secondary { background: #f1f5f9; color: #64748b; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <button class="btn-back" onclick="window.location.href='index.html'">⬅️</button>
+        <h2 style="margin:0; font-size: 1.2rem;">Durusul Lughah</h2>
+    </header>
+
+    <div class="tabs-container">
+        <button class="tab-btn active" onclick="gantiTab('jilid1')">
+            <span style="font-size: 1.8rem;">🌱</span>
+            <span style="font-size: 0.8rem;">Dasar</span>
+        </button>
+        <button class="tab-btn" onclick="gantiTab('jilid2')">
+            <span style="font-size: 1.8rem;">🛠️</span>
+            <span style="font-size: 0.8rem;">Terampil</span>
+        </button>
+        <button class="tab-btn" onclick="gantiTab('jilid3')">
+            <span style="font-size: 1.8rem;">🏆</span>
+            <span style="font-size: 0.8rem;">Mahir</span>
+        </button>
+    </div>
+
+    <div id="map-area">
+        <svg id="path-svg"></svg>
+        <div id="nodes-container"></div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div id="modal-box">
+        <span id="m-icon" class="modal-icon">🔒</span>
+        <h3 id="m-title" style="margin-bottom:10px;">Judul</h3>
+        <p id="m-desc" style="color:#666; font-size:0.9rem;">Deskripsi</p>
+        <div id="m-actions" class="modal-btns"></div>
+    </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+  import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+    authDomain: "durusul-lughoh-online.firebaseapp.com",
+    projectId: "durusul-lughoh-online",
+    storageBucket: "durusul-lughoh-online.firebasestorage.app",
+    messagingSenderId: "260425044938",
+    appId: "1:260425044938:web:88d956d2cac35331887533",
+    measurementId: "G-8NR5K1NKPH"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  let currentDLProgress = 1; 
+  
+  // --- DATA DURUSUL LUGHAH ---
+  const levels = [
+      // JILID 1 (1-23)
+      { id: 1, title: "هَذَا (Ini)" }, { id: 2, title: "ذَلِكَ (Itu)" }, { id: 3, title: "ال (Ma'rifah)" }, 
+      { id: 4, title: "حروف الجر" }, { id: 5, title: "المضاف" }, { id: 6, title: "نعت منعوت" },
+      { id: 7, title: "تلك (Itu Pr)" }, { id: 8, title: "هذه (Ini Pr)" }, { id: 9, title: "مبتدأ خبر" },
+      { id: 10, title: "الضمائر 1" }, { id: 11, title: "فيه/فيها" }, { id: 12, title: "الضمائر 2" },
+      { id: 13, title: "الجمع 1" }, { id: 14, title: "الجمع 2" }, { id: 15, title: "الأسماء" },
+      { id: 16, title: "العاقل" }, { id: 17, title: "غير العاقل" }, { id: 18, title: "كم (Berapa)" },
+      { id: 19, title: "العدد 3-10" }, { id: 20, title: "العدد الترتيبي" }, { id: 21, title: "الممنوع" },
+      { id: 22, title: "مراجعة 1" }, { id: 23, title: "مراجعة 2" },
+
+      // JILID 2 (24-54)
+      { id: 24, title: "إنّ" }, { id: 25, title: "لعلّ" }, { id: 26, title: "ذو / ذات" },
+      { id: 27, title: "غالي" }, { id: 28, title: "الفعل الماضي" }, { id: 29, title: "الفعل المضارع" }
+  ];
+  for(let i=30; i<=60; i++) levels.push({ id: i, title: "Pelajaran " + i });
+
+  const levelGroups = {
+      'jilid1': { start: 1, end: 23 },
+      'jilid2': { start: 24, end: 45 },
+      'jilid3': { start: 46, end: 60 }
+  };
+  
+  let currentTab = 'jilid1';
+
+  window.gantiTab = function(tabName) {
+      currentTab = tabName;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+          btn.classList.remove('active');
+          if(btn.getAttribute('onclick').includes(tabName)) btn.classList.add('active');
+      });
+      renderSnakeMap();
+  };
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        
+        currentDLProgress = (docSnap.exists() && docSnap.data().dl_progress) ? docSnap.data().dl_progress : 1;
+        
+        if (currentDLProgress >= 46) gantiTab('jilid3');
+        else if (currentDLProgress >= 24) gantiTab('jilid2');
+        else gantiTab('jilid1');
+        
+    } else {
+        window.location.href = 'index.html';
+    }
+  });
+
+  function renderSnakeMap() {
+      const container = document.getElementById('nodes-container');
+      const svgEl = document.getElementById('path-svg');
+      const mapArea = document.getElementById('map-area');
+      
+      container.innerHTML = ''; 
+
+      const range = levelGroups[currentTab];
+      const filteredLevels = levels.filter(l => l.id >= range.start && l.id <= range.end);
+
+      const nodeSize = 60; const cols = 3; const rowHeight = 120;
+      const contentWidth = Math.min(mapArea.offsetWidth || window.innerWidth, 480);
+      const colWidth = contentWidth / cols;
+
+      let nodesHtml = ''; let pathPoints = [];
+
+      filteredLevels.forEach((level, index) => {
+          const row = Math.floor(index / cols);
+          let col = (row % 2 === 0) ? (index % cols) : ((cols - 1) - (index % cols));
+          
+          const posX = (col * colWidth) + (colWidth / 2) - (nodeSize / 2);
+          const posY = 30 + (row * rowHeight);
+          pathPoints.push({ x: posX + (nodeSize/2), y: posY + (nodeSize/2) });
+
+          let statusClass = 'locked'; let content = '🔒'; let statusData = 'locked';
+
+          if (level.id < currentDLProgress) {
+              statusClass = 'completed'; content = '<span class="check-icon">✔</span>'; statusData = 'completed';
+          } else if (level.id === currentDLProgress) {
+              statusClass = 'active'; content = level.id; statusData = 'active';
+          }
+
+          nodesHtml += `
+            <div id="node-${level.id}" class="map-node ${statusClass}" data-status="${statusData}" 
+                 style="left: ${posX}px; top: ${posY}px;" onclick="handlePopup(${level.id})">
+                ${content}
+            </div>
+            <div class="level-label" style="left: ${posX - 15}px; top: ${posY + 65}px;">${level.id}. ${level.title}</div>
+          `;
+      });
+
+      const totalHeight = 50 + (Math.ceil(filteredLevels.length / cols) * rowHeight) + 50;
+      container.style.height = totalHeight + "px";
+      svgEl.style.height = totalHeight + "px";
+      container.innerHTML = nodesHtml;
+
+      drawSnakePath(pathPoints);
+      
+      mapArea.classList.remove('ready');
+      setTimeout(() => mapArea.classList.add('ready'), 50);
+      
+      setTimeout(() => {
+          const activeNode = document.querySelector('.map-node.active');
+          if(activeNode) activeNode.scrollIntoView({behavior: "smooth", block: "center"});
+      }, 300);
+  }
+
+  function drawSnakePath(points) {
+      if (points.length < 2) { document.getElementById('path-svg').innerHTML = ''; return; }
+      let pathD = `M ${points[0].x} ${points[0].y}`;
+      for (let i = 1; i < points.length; i++) pathD += ` L ${points[i].x} ${points[i].y}`;
+      document.getElementById('path-svg').innerHTML = `<path d="${pathD}" stroke="#cbd5e1" stroke-width="8" fill="none" stroke-linecap="round" stroke-linejoin="round" />`;
+  }
+
+  window.handlePopup = function(id) {
+      const levelData = levels.find(L => L.id === id);
+      const title = levelData ? levelData.title : "Level " + id;
+      const el = document.getElementById(`node-${id}`);
+      const status = el ? el.dataset.status : 'locked';
+
+      showModal(status, id, title);
+  }
+
+  function showModal(status, id, title) {
+      const overlay = document.getElementById('modal-overlay');
+      const icon = document.getElementById('m-icon');
+      const tit = document.getElementById('m-title');
+      const desc = document.getElementById('m-desc');
+      const actions = document.getElementById('m-actions');
+
+      actions.innerHTML = '';
+
+      if (status === 'locked') {
+          icon.innerHTML = '🔒'; tit.innerText = 'Terkunci';
+          desc.innerText = `Selesaikan level sebelumnya.`;
+          actions.innerHTML = `<button class="btn-modal btn-secondary" onclick="closeModal()">Oke</button>`;
+      } 
+      else if (status === 'active') {
+          icon.innerHTML = '📖'; tit.innerText = `Pelajaran ${id}`;
+          desc.innerText = `Mulai belajar materi "${title}"?`;
+          
+          // --- PERBAIKAN PENTING DI SINI: MENGARAH KE GAME1.HTML ---
+          actions.innerHTML = `
+            <button class="btn-modal btn-secondary" onclick="closeModal()">Nanti</button>
+            <button class="btn-modal btn-primary" onclick="window.location.href='game1.html?level=${id}'">Mulai</button>`;
+      } 
+      else if (status === 'completed') {
+          icon.innerHTML = '↺'; tit.innerText = 'Selesai';
+          desc.innerText = `Ulangi "${title}"?`;
+          
+          // --- PERBAIKAN PENTING DI SINI JUGA ---
+          actions.innerHTML = `
+            <button class="btn-modal btn-secondary" onclick="closeModal()">Tutup</button>
+            <button class="btn-modal btn-primary" style="background:#fbbf24; color:#78350f;" onclick="window.location.href='game1.html?level=${id}'">Main Lagi</button>`;
+      }
+
+      overlay.style.display = 'flex';
+      setTimeout(() => overlay.classList.add('show'), 10);
+  }
+
+  window.closeModal = function() {
+      const overlay = document.getElementById('modal-overlay');
+      overlay.classList.remove('show');
+      setTimeout(() => { overlay.style.display = 'none'; }, 200);
+  }
+
+  const soundPop = new Audio("audio/pop.mp3"); 
+  const isSoundOn = localStorage.getItem('pref_sound') !== 'false';
+  document.addEventListener('click', (e) => {
+      if ((e.target.closest('.map-node') || e.target.closest('.btn-back') || e.target.closest('.btn-modal') || e.target.closest('.tab-btn')) && isSoundOn) {
+          soundPop.currentTime = 0; soundPop.play().catch(()=>{});
+      }
+  });
+</script>
+
+</body>
+</html>

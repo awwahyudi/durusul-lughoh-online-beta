@@ -2,224 +2,297 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arabic Quest</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nahwu</title>
     <style>
         /* --- RESET & BASIC STYLE --- */
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        body { background-color: #f0fdf4; color: #333; display: flex; justify-content: center; min-height: 100vh; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f0fdf4; color: #333; display: flex; justify-content: center; min-height: 100vh; overscroll-behavior-y: none; }
         
+        /* --- LOADING SCREEN (Baru: Mencegah Flash) --- */
+        #loading-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; z-index: 2000; /* Paling atas di atas segalanya */
+            display: flex; justify-content: center; align-items: center;
+            flex-direction: column;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 4px solid #f3f3f3; border-top: 4px solid #16a34a; /* Hijau */
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
         /* --- MOBILE CONTAINER FRAME --- */
         #app-container {
             width: 100%;
-            max-width: 480px; /* Batas lebar agar seperti HP */
+            max-width: 480px;
             background: white;
             position: relative;
             box-shadow: 0 0 20px rgba(0,0,0,0.1);
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 100vh; 
+            height: 100dvh; 
             overflow: hidden;
         }
 
-        /* --- LAYAR LOGIN (FULL SCREEN) --- */
+        /* --- LAYAR LOGIN (Sekarang Hidden Default) --- */
         #login-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            display: none; /* Default SEMBUNYI, biar gak kedip */
+            
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: linear-gradient(135deg, #16a34a, #15803d);
-            display: flex; /* Flex untuk tengahin konten */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100; /* Paling atas */
-            padding: 30px;
-            text-align: center;
-            color: white;
+            flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; padding: 30px; text-align: center; color: white;
         }
-        
         .logo-area { margin-bottom: 50px; }
         .logo-area h1 { font-size: 2.5rem; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.2); }
         .logo-area p { font-size: 1.1rem; opacity: 0.9; }
 
         .btn-google {
-            background: white; color: #333;
-            padding: 15px 30px;
-            border-radius: 50px;
-            border: none;
-            font-weight: bold;
-            font-size: 1rem;
-            display: flex; align-items: center; gap: 10px;
-            cursor: pointer;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: white; color: #555;
+            padding: 12px 25px;
+            border-radius: 50px; border: none;
+            font-weight: 600; font-size: 1rem;
+            display: flex; align-items: center; gap: 12px;
+            cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             transition: transform 0.2s;
         }
         .btn-google:active { transform: scale(0.95); }
+        .google-icon-svg { width: 24px; height: 24px; }
 
         /* --- DASHBOARD AREA --- */
         #dashboard-screen {
-            display: none; /* Sembunyi default */
-            flex-direction: column;
+            display: none; flex-direction: column;
             height: 100%;
         }
 
-        /* Header Atas */
+        /* Header Melayang */
         header {
-            padding: 15px 20px;
-            background: white;
-            border-bottom: 2px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: fixed; top: 0; width: 100%; max-width: 480px;
+            padding: 15px 20px; background: white; border-bottom: 2px solid #e5e7eb;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 1001;
         }
+
         .xp-points { font-weight: bold; color: #f59e0b; display: flex; align-items: center; gap: 5px; }
         .premium-badge { background: #f59e0b; color: white; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: bold; display: none; }
 
-        /* Area Konten Utama (Scrollable) */
+        /* Main Content */
         main {
-            flex: 1; /* Isi sisa ruang */
-            overflow-y: auto;
-            padding: 20px;
-            background: #f8fafc;
-            padding-bottom: 80px; /* Ruang untuk navbar bawah */
+            flex: 1; overflow-y: auto; padding: 20px; background: #f8fafc;
+            padding-top: 90px; padding-bottom: 100px;
         }
 
-        /* Halaman-halaman (Tab Content) */
+        /* Card & UI Elements */
         .page-section { display: none; animation: fadeIn 0.3s; }
         .page-section.active { display: block; }
-
-        /* Card Level Style */
+        
         .level-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            border-bottom: 4px solid #e2e8f0; /* Efek 3D */
-            display: flex; justify-content: space-between; align-items: center;
+            background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px;
+            border-bottom: 4px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
         }
+        .level-card:active { transform: translateY(2px); border-bottom: 2px solid #cbd5e1; } /* Efek klik card */
+
         .level-info h3 { margin-bottom: 5px; color: #15803d; }
         .level-info p { font-size: 0.9rem; color: #64748b; }
+        
         .btn-play {
-            background: #16a34a; color: white;
-            border: none; padding: 10px 20px;
-            border-radius: 10px; font-weight: bold;
-            border-bottom: 4px solid #14532d; /* Efek 3D tombol */
-            cursor: pointer;
+            background: #16a34a; color: white; border: none; padding: 10px 20px;
+            border-radius: 10px; font-weight: bold; border-bottom: 4px solid #14532d; cursor: pointer;
         }
         .btn-play:active { border-bottom: 0; transform: translateY(4px); }
-        
-        .locked-card { opacity: 0.6; filter: grayscale(100%); pointer-events: none; }
 
-        /* --- BOTTOM NAVIGATION BAR --- */
+        /* Navbar Melayang */
         nav {
-            position: absolute; bottom: 0; width: 100%;
-            background: white;
-            border-top: 1px solid #e5e7eb;
-            display: flex; justify-content: space-around;
-            padding: 10px 0;
-            z-index: 50;
+            position: fixed; bottom: 0; width: 100%; max-width: 480px;
+            background: white; border-top: 1px solid #e5e7eb;
+            display: flex; justify-content: space-around; padding: 10px 0;
+            z-index: 1000; padding-bottom: env(safe-area-inset-bottom, 10px);
         }
         .nav-item {
-            display: flex; flex-direction: column; align-items: center;
-            color: #94a3b8; cursor: pointer; font-size: 0.8rem;
-            background: none; border: none;
+            display: flex; flex-direction: column; align-items: center; color: #94a3b8;
+            cursor: pointer; font-size: 0.8rem; background: none; border: none;
         }
-        .nav-item span { font-size: 1.5rem; margin-bottom: 2px; } /* Emoji size */
+        .nav-item span { font-size: 1.5rem; margin-bottom: 2px; }
         .nav-item.active { color: #16a34a; font-weight: bold; }
 
-        /* Profil Styling */
+        /* Profil */
         .profile-header { text-align: center; margin-bottom: 20px; }
-        .avatar { font-size: 4rem; margin-bottom: 10px; }
+        .avatar-container { 
+            width: 80px; height: 80px; margin: 0 auto 15px auto;
+            background: #dcfce7; border-radius: 50%; padding: 10px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        .avatar-svg { width: 100%; height: 100%; fill: #16a34a; }
         .btn-logout { width: 100%; padding: 15px; background: #ef4444; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px;}
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- TOGGLE SWITCH (PENGATURAN) --- */
+        .setting-item {
+            background: white; padding: 15px 20px; border-radius: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; border: 1px solid #e2e8f0;
+        }
+        .switch { position: relative; display: inline-block; width: 50px; height: 26px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider {
+            position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc; transition: .4s; border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: white; transition: .4s; border-radius: 50%;
+        }
+        input:checked + .slider { background-color: #16a34a; } /* Warna Hijau saat ON */
+        input:checked + .slider:before { transform: translateX(24px); }
+
+        /* Tombol Pengaturan di Header */
+        .btn-gear { background: none; border: none; font-size: 1.2rem; cursor: pointer; padding: 5px; }
     </style>
 </head>
 <body>
+
+<div id="loading-screen">
+    <div class="spinner"></div>
+    <p style="color: #666; font-size: 0.9rem;">Memuat data...</p>
+</div>
 
 <div id="app-container">
     
     <div id="login-screen">
         <div class="logo-area">
-            <h1>🕌 Durusul Arab</h1>
-            <p>Belajar Bahasa Arab Seru & Mudah</p>
+            <h1>🕌 BAIM</h1>
+            <p>Bahasa Arab Itu Mudah</p>
         </div>
         <button id="btnLogin" class="btn-google">
-            <span>G</span> Masuk dengan Google
+            <svg class="google-icon-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                <path fill="#34A853" d="M24 48c6.48 0 12.23-2.57 16.43-6.43l-7.73-6c-2.15 1.45-4.92 2.3-8.7 2.3-6.26 0-11.57-4.22-13.46-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Masuk dengan Google
         </button>
     </div>
 
     <div id="dashboard-screen">
-        
-        <header>
-            <div id="userDisplayName">Halo, User</div>
+ <header>
+            <div id="userDisplayName" style="font-weight: bold; font-size: 0.9rem;">Halo, User</div>
             <div style="display: flex; align-items: center; gap:10px;">
                 <span id="badgePremium" class="premium-badge">PREMIUM</span>
-                <div class="xp-points">⚡ 0 XP</div>
+                <button class="btn-gear" onclick="gantiHalaman('settings', this)">⚙️</button>
             </div>
         </header>
 
         <main>
             <div id="page-home" class="page-section active">
-                <h2 style="margin-bottom: 20px;">Peta Belajar</h2>
+                <h2 style="margin-bottom: 20px; color: #166534;">Pilih Permainan</h2>
                 
-                <div class="level-card">
-                    <div class="level-info">
-                        <h3>Level 1: Dasar</h3>
-                        <p>Huruf Hijaiyah & Angka</p>
+                <div class="level-card btn-effect" onclick="window.location.href='dl.html'" style="cursor: pointer;">
+                    <div style="display:flex; align-items:center; gap: 15px;">
+                        <div style="font-size: 2.5rem;">📖</div> 
+                        <div class="level-info"><h3 style="margin:0;">Pemula</h3><p style="margin:0; font-size:0.85rem; color:#666;">Belajar dari awal</p></div>
                     </div>
                     <button class="btn-play">Mulai</button>
                 </div>
 
-                <div class="level-card locked-card" id="lvl-premium-1">
-                    <div class="level-info">
-                        <h3>Level 2: Perkenalan</h3>
-                        <p>🔒 Premium Only</p>
+                <div class="level-card btn-effect" onclick="window.location.href='nahwu.html'"  style="cursor: pointer;">
+                    <div style="display:flex; align-items:center; gap: 15px;">
+                        <div style="font-size: 2.5rem;">🚀</div> 
+                        <div class="level-info"><h3 style="margin:0;">Lanjutan</h3><p style="margin:0; font-size:0.85rem; color:#666;">Belajar Ilmu Nahwu</p></div>
                     </div>
-                    <button class="btn-play">Kunci</button>
+                    <button class="btn-play">Mulai</button>
                 </div>
 
-                <div class="level-card locked-card" id="lvl-premium-2">
-                    <div class="level-info">
-                        <h3>Level 3: Tata Bahasa</h3>
-                        <p>🔒 Premium Only</p>
+                <div class="level-card btn-effect" onclick="alert('Membuka Game Kosakata...')" style="cursor: pointer;">
+                    <div style="display:flex; align-items:center; gap: 15px;">
+                        <div style="font-size: 2.5rem;">🎮</div> 
+                        <div class="level-info"><h3 style="margin:0;">Kosakata</h3><p style="margin:0; font-size:0.85rem; color:#666;">Game Hafalan</p></div>
                     </div>
-                    <button class="btn-play">Kunci</button>
+                    <button class="btn-play">Main</button>
                 </div>
             </div>
 
             <div id="page-leaderboard" class="page-section">
                 <h2>Papan Peringkat 🏆</h2>
-                <p style="margin-top: 20px; color: #666;">Segera Hadir: Lihat posisimu dibanding teman-teman lain!</p>
+                <p style="margin-top: 20px; color: #666;">Segera Hadir...</p>
             </div>
 
             <div id="page-profile" class="page-section">
                 <div class="profile-header">
-                    <div class="avatar">👳</div>
-                    <h2 id="profileName">Nama User</h2>
+                    <div class="avatar-container">
+                        <svg class="avatar-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 119 0 4.5 4.5 0 01-9 0zM3.751 20.105a8.25 8.25 0 0116.498 0 .75.75 0 01-.437.695A18.683 18.683 0 0112 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 01-.437-.695z" clip-rule="evenodd" /></svg>
+                    </div>
+                    <div id="name-display" style="display: flex; justify-content: center; align-items: center; gap: 8px; margin-bottom: 5px;">
+                        <h2 id="profileName" style="margin: 0;">Nama User</h2>
+                        <button onclick="modeEditNama()" class="btn-effect" style="background:none; border:none; cursor:pointer; font-size:1.2rem;">✏️</button>
+                    </div>
+                    <div id="name-edit" style="display: none; margin-bottom: 10px;">
+                        <input type="text" id="inputNewName" placeholder="Nama baru..." style="padding: 8px; border: 1px solid #ccc; border-radius: 5px; width: 60%;">
+                        <button onclick="simpanNamaBaru()" class="btn-effect" style="padding: 8px 15px; background: #16a34a; color: white; border: none; border-radius: 5px;">💾</button>
+                        <button onclick="batalEditNama()" class="btn-effect" style="padding: 8px 10px; background: #ef4444; color: white; border: none; border-radius: 5px;">❌</button>
+                    </div>
+                    
                     <p id="profileEmail" style="color:#666; font-size: 0.9rem;">user@email.com</p>
+
+                    <div class="profile-stats" style="display: flex; gap: 15px; margin-top: 20px;">
+    <div style="flex: 1; background: #f0fdf4; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #dcfce7;">
+        <span style="font-size: 1.5rem;">🏆</span>
+        <p style="font-size: 0.8rem; color: #666;">Level Nahwu</p>
+        <h3 id="display-level">-</h3>
+    </div>
+    
+    <div style="flex: 1; background: #fffbeb; padding: 15px; border-radius: 15px; text-align: center; border: 1px solid #fef3c7;">
+        <span style="font-size: 1.5rem;">⚡</span>
+        <p style="font-size: 0.8rem; color: #666;">Total Skor XP</p>
+        <h3 id="display-xp">0</h3>
+    </div>
+</div>
+
+
                     <div style="margin-top: 10px;">
-                        <span id="badgeProfile" style="background:#ddd; padding:5px 10px; border-radius:20px; font-size:0.8rem;">Free Member</span>
+                        <span id="badgeProfile" style="background:#e2e8f0; padding:5px 15px; border-radius:20px; font-size:0.8rem; font-weight: bold; color: #475569;">Free Member</span>
                     </div>
                 </div>
+                <button id="btnLogout" class="btn-logout btn-effect">Keluar Akun</button>
+            </div>
 
-                <div class="level-card">
-                    <div class="level-info"><h3>Statistik</h3><p>Total XP: 0</p></div>
+            <div id="page-settings" class="page-section">
+                <h2 style="margin-bottom: 20px;">Pengaturan ⚙️</h2>
+                
+                <div class="setting-item">
+                    <span>🔊 Efek Suara</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleSound" onchange="updateSetting('sound')" checked>
+                        <span class="slider"></span>
+                    </label>
                 </div>
 
-                <button id="btnLogout" class="btn-logout">Keluar (Logout)</button>
+                <div class="setting-item">
+                    <span>📳 Efek Getar</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggleVibration" onchange="updateSetting('vibrate')" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div style="margin-top: 30px; padding: 15px; background: #fffbe6; border-radius: 10px; font-size: 0.85rem; color: #b45309;">
+                    <p>💡 <b>Info:</b> Pengaturan ini disimpan di HP ini. Getar mungkin tidak berfungsi di beberapa perangkat iOS/iPhone.</p>
+                </div>
+                
+                <button onclick="gantiHalaman('home', document.querySelector('.nav-item'))" class="btn-effect" style="margin-top: 20px; padding: 10px 20px; background: #333; color: white; border: none; border-radius: 8px; width: 100%;">Kembali ke Menu Utama</button>
             </div>
         </main>
 
         <nav>
-            <button class="nav-item active" onclick="gantiHalaman('home', this)">
-                <span>🏠</span> Belajar
-            </button>
-            <button class="nav-item" onclick="gantiHalaman('leaderboard', this)">
-                <span>🏆</span> Peringkat
-            </button>
-            <button class="nav-item" onclick="gantiHalaman('profile', this)">
-                <span>👤</span> Profil
-            </button>
+            <button class="nav-item active" onclick="gantiHalaman('home', this)"><span>🏠</span> Belajar</button>
+            <button class="nav-item" onclick="gantiHalaman('leaderboard', this)"><span>🏆</span> Peringkat</button>
+            <button class="nav-item" onclick="gantiHalaman('profile', this)"><span>👤</span> Profil</button>
         </nav>
     </div>
 
@@ -227,19 +300,20 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+  // TAMBAHKAN 'updateDoc' di sini:
+  import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-  // --- PASTE CONFIG ANDA DISINI ---
-const firebaseConfig = {
-  apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
-  authDomain: "durusul-lughoh-online.firebaseapp.com",
-  projectId: "durusul-lughoh-online",
-  storageBucket: "durusul-lughoh-online.firebasestorage.app",
-  messagingSenderId: "260425044938",
-  appId: "1:260425044938:web:88d956d2cac35331887533",
-  measurementId: "G-8NR5K1NKPH"
-};
+  // CONFIG FIREBASE ANDA
+  const firebaseConfig = {
+    apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+    authDomain: "durusul-lughoh-online.firebaseapp.com",
+    projectId: "durusul-lughoh-online",
+    storageBucket: "durusul-lughoh-online.firebasestorage.app",
+    messagingSenderId: "260425044938",
+    appId: "1:260425044938:web:88d956d2cac35331887533",
+    measurementId: "G-8NR5K1NKPH"
+  };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
@@ -247,85 +321,194 @@ const firebaseConfig = {
   const provider = new GoogleAuthProvider();
 
   // --- LOGIC UI ---
+  const loadingScreen = document.getElementById('loading-screen');
   const loginScreen = document.getElementById('login-screen');
   const dashboardScreen = document.getElementById('dashboard-screen');
-  
   const btnLogin = document.getElementById('btnLogin');
   const btnLogout = document.getElementById('btnLogout');
 
-  // Login
-  btnLogin.addEventListener('click', () => {
-    signInWithPopup(auth, provider).catch(console.error);
-  });
+  // Login & Logout
+  btnLogin.addEventListener('click', () => { signInWithPopup(auth, provider).catch(console.error); });
+  btnLogout.addEventListener('click', () => { signOut(auth).then(() => window.location.reload()); });
 
-  // Logout
-  btnLogout.addEventListener('click', () => {
-    signOut(auth).then(() => window.location.reload());
-  });
-
-  // Auth State Listener
-  onAuthStateChanged(auth, async (user) => {
+  // Auth State Listener (DENGAN LOADING SCREEN)
+ onAuthStateChanged(auth, async (user) => {
     if (user) {
-        // User Login -> Tampilkan Dashboard
-        loginScreen.style.display = 'none';
-        dashboardScreen.style.display = 'flex'; // Pakai Flex biar layout jalan
-        
-        // Isi Data UI
+        // 1. Ambil data dasar dari akun Google
         document.getElementById('userDisplayName').innerText = "Ahlan, " + user.displayName.split(" ")[0];
         document.getElementById('profileName').innerText = user.displayName;
         document.getElementById('profileEmail').innerText = user.email;
 
-        // Cek Database untuk Premium
-        cekStatusPremium(user);
+        // 2. AMBIL DATA DARI DATABASE (XP & LEVEL)
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Tampilkan XP dan Level ke elemen HTML yang kita buat tadi
+            if(document.getElementById('display-level')) {
+                document.getElementById('display-level').innerText = data.nahwu_progress || 1;
+            }
+            if(document.getElementById('display-xp')) {
+                document.getElementById('display-xp').innerText = data.total_xp || 0;
+            }
+        }
+        
+        // 3. Cek Premium
+        await cekStatusPremium(user);
+
+        // 4. Tampilkan Dashboard, Sembunyikan Login
+        loginScreen.style.display = 'none';
+        dashboardScreen.style.display = 'flex';
     } else {
-        // Belum Login -> Tampilkan Login Screen saja
-        loginScreen.style.display = 'flex';
         dashboardScreen.style.display = 'none';
+        loginScreen.style.display = 'flex';
     }
+    
+    loadingScreen.style.display = 'none';
   });
 
-  // Cek Premium & Buat User
+  // Cek Premium
   async function cekStatusPremium(user) {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      // Buat data baru jika belum ada
-      await setDoc(userRef, { email: user.email, nama: user.displayName, isPremium: false, premiumExpired: null });
+      await setDoc(userRef, { 
+          email: user.email, 
+          nama: user.displayName, 
+          isPremium: false, 
+          premiumExpired: null 
+      });
     } else {
-      // Jika data ada, cek status
       const data = userSnap.data();
       const now = new Date();
       const expired = data.premiumExpired ? new Date(data.premiumExpired) : null;
 
       if (data.isPremium && expired > now) {
-          // Buka Fitur Premium
           document.getElementById('badgePremium').style.display = 'inline-block';
-          document.getElementById('badgeProfile').innerText = "Premium Member ✨";
+          document.getElementById('badgeProfile').innerText = "Premium Member";
           document.getElementById('badgeProfile').style.background = "gold";
-          
-          // Buka Gembok UI
-          document.getElementById('lvl-premium-1').classList.remove('locked-card');
-          document.getElementById('lvl-premium-2').classList.remove('locked-card');
-          // Ubah teks tombol
-          document.getElementById('lvl-premium-1').querySelector('p').innerText = "Siap Belajar";
-          document.getElementById('lvl-premium-1').querySelector('button').innerText = "Mulai";
+          document.getElementById('badgeProfile').style.color = "#713f12";
       }
     }
   }
 
-  // --- FUNGSI GANTI HALAMAN (TAB) ---
-  // Kita buat global agar bisa dipanggil onclick di HTML
+  // Navigasi
   window.gantiHalaman = function(pageId, btnElement) {
-      // 1. Sembunyikan semua halaman
       document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-      // 2. Tampilkan halaman yang dipilih
       document.getElementById('page-' + pageId).classList.add('active');
-
-      // 3. Reset warna tombol nav
       document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      // 4. Warnai tombol yang diklik
       btnElement.classList.add('active');
+  }
+
+  // --- FITUR GANTI NAMA ---
+  
+  // 1. Munculkan Form Edit
+  window.modeEditNama = function() {
+      const currentName = document.getElementById('profileName').innerText;
+      document.getElementById('inputNewName').value = currentName; // Isi otomatis nama lama
+      
+      document.getElementById('name-display').style.display = 'none'; // Sembunyikan Teks
+      document.getElementById('name-edit').style.display = 'block';   // Munculkan Input
+  }
+
+  // 2. Batal Edit
+  window.batalEditNama = function() {
+      document.getElementById('name-display').style.display = 'flex';
+      document.getElementById('name-edit').style.display = 'none';
+  }
+
+  // 3. Simpan ke Firebase
+  window.simpanNamaBaru = async function() {
+      const newName = document.getElementById('inputNewName').value;
+      const user = auth.currentUser;
+
+      if (newName.trim() === "") {
+          alert("Nama tidak boleh kosong!");
+          return;
+      }
+
+      // Tampilkan Loading sederhana (ubah tombol jadi ...)
+      const btnSimpan = document.querySelector('#name-edit button');
+      btnSimpan.innerText = "...";
+
+      try {
+          // A. Update di Auth (Google Login)
+          await updateProfile(user, { displayName: newName });
+          
+          // B. Update di Database Firestore
+          const userRef = doc(db, "users", user.uid);
+          await updateDoc(userRef, { nama: newName });
+
+          // C. Update UI
+          document.getElementById('profileName').innerText = newName;
+          document.getElementById('userDisplayName').innerText = "Ahlan, " + newName.split(" ")[0]; // Update Header juga
+          
+          alert("Nama berhasil diubah!");
+          batalEditNama(); // Kembali ke tampilan awal
+
+      } catch (error) {
+          console.error("Gagal update nama:", error);
+          alert("Gagal mengubah nama. Coba lagi.");
+      } finally {
+          btnSimpan.innerText = "💾"; // Balikin tombol
+      }
+  }
+  // --- FITUR SUARA & GETAR ---
+
+  // 1. Siapkan Audio (Pastikan folder 'audio' dan file 'pop.mp3' sudah ada)
+    const soundPop = new Audio("audio/pop.mp3");
+  
+  // 2. Load Setting Awal dari LocalStorage (HP User)
+  let isSoundOn = localStorage.getItem('pref_sound') !== 'false'; // Default TRUE
+  let isVibrateOn = localStorage.getItem('pref_vibrate') !== 'false'; // Default TRUE
+
+  // Set posisi toggle UI sesuai settingan
+  document.getElementById('toggleSound').checked = isSoundOn;
+  document.getElementById('toggleVibration').checked = isVibrateOn;
+
+  // 3. Fungsi Update Setting (Dipanggil saat switch digeser)
+  window.updateSetting = function(type) {
+      if (type === 'sound') {
+          isSoundOn = document.getElementById('toggleSound').checked;
+          localStorage.setItem('pref_sound', isSoundOn);
+          if(isSoundOn) soundPop.play(); // Test bunyi
+      } else if (type === 'vibrate') {
+          isVibrateOn = document.getElementById('toggleVibration').checked;
+          localStorage.setItem('pref_vibrate', isVibrateOn);
+          if(isVibrateOn && navigator.vibrate) navigator.vibrate(50); // Test getar
+      }
+  }
+
+  // 4. GLOBAL LISTENER: Deteksi klik di seluruh aplikasi
+  document.addEventListener('click', function(e) {
+      // Cek apakah yang diklik adalah Tombol atau Card atau Navigasi
+      // Kita cek apakah element punya class 'btn-effect', 'btn-play', 'nav-item', atau tag <button>
+      if (
+          e.target.tagName === 'BUTTON' || 
+          e.target.classList.contains('nav-item') ||
+          e.target.classList.contains('level-card') ||
+          e.target.classList.contains('btn-effect') ||
+          e.target.closest('.level-card') || 
+          e.target.closest('.nav-item')
+      ) {
+          mainkanEfek();
+      }
+  });
+
+  // Fungsi Eksekusi
+  function mainkanEfek() {
+      // Mainkan Suara
+      if (isSoundOn) {
+          soundPop.currentTime = 0; // Reset ke awal biar bisa di-spam klik
+          soundPop.play().catch(e => console.log("Audio play error:", e));
+      }
+      
+      // Mainkan Getar (50 milidetik)
+      if (isVibrateOn && navigator.vibrate) {
+          navigator.vibrate(50);
+      }
   }
 </script>
 
