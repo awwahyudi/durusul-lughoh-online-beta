@@ -190,26 +190,49 @@
         </header>
 
         <main>
-            <div id="page-home" class="page-section active">
-                <h2 style="margin-bottom: 20px; color: #166534;">Pilih Permainan</h2>
+       <div id="page-home" class="page-section active">
+                <h2 style="margin-bottom: 20px; color: #166534;">Menu Utama</h2>
                 
-                <div class="level-card btn-effect" onclick="window.location.href='dl.html'" style="cursor: pointer;">
+                <div class="level-card btn-effect" onclick="cekAkses('dl.html', true)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">📖</div> 
-                        <div class="level-info"><h3 style="margin:0;">Pemula</h3><p style="margin:0; font-size:0.85rem; color:#666;">Belajar dari awal</p></div>
+                        <div class="level-info">
+                            <h3 style="margin:0;">
+                                Pemula 
+                                <span class="lock-icon" style="font-size: 0.8rem; display:none;">🔒</span>
+                            </h3>
+                            <p style="margin:0; font-size:0.85rem; color:#666;">Durusul Lughah</p>
+                        </div>
                     </div>
                     <button class="btn-play">Mulai</button>
                 </div>
 
-                <div class="level-card btn-effect" onclick="window.location.href='nahwu.html'"  style="cursor: pointer;">
+                <div class="level-card btn-effect" onclick="cekAkses('nahwu.html', true)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🚀</div> 
-                        <div class="level-info"><h3 style="margin:0;">Lanjutan</h3><p style="margin:0; font-size:0.85rem; color:#666;">Belajar Ilmu Nahwu</p></div>
+                        <div class="level-info">
+                            <h3 style="margin:0;">
+                                Lanjutan
+                                <span class="lock-icon" style="font-size: 0.8rem; display:none;">🔒</span>
+                            </h3>
+                            <p style="margin:0; font-size:0.85rem; color:#666;">Ilmu Nahwu</p>
+                        </div>
                     </div>
                     <button class="btn-play">Mulai</button>
                 </div>
 
-                <div class="level-card btn-effect" onclick="alert('Membuka Game Kosakata...')" style="cursor: pointer;">
+                <div class="level-card btn-effect" onclick="cekAkses('tugas.html', false)" style="cursor: pointer;">
+                    <div style="display:flex; align-items:center; gap: 15px;">
+                        <div style="font-size: 2.5rem;">📝</div> 
+                        <div class="level-info">
+                            <h3 style="margin:0;">Tugas & Latihan</h3>
+                            <p style="margin:0; font-size:0.85rem; color:#666;">Evaluasi Harian</p>
+                        </div>
+                    </div>
+                    <button class="btn-play" style="background:#f59e0b; border-bottom:4px solid #b45309;">Buka</button>
+                </div>
+
+                <div class="level-card btn-effect" onclick="cekAkses('kosakata.html', false)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🎮</div> 
                         <div class="level-info"><h3 style="margin:0;">Kosakata</h3><p style="margin:0; font-size:0.85rem; color:#666;">Game Hafalan</p></div>
@@ -513,4 +536,5 @@
 </script>
 
 </body>
+
 </html>
