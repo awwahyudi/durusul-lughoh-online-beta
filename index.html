@@ -322,219 +322,245 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
-  import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
-  // TAMBAHKAN 'updateDoc' di sini:
-  import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+    // 1. IMPORT HARUS DI PALING ATAS
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
 
-  // CONFIG FIREBASE ANDA
-  const firebaseConfig = {
-    apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
-    authDomain: "durusul-lughoh-online.firebaseapp.com",
-    projectId: "durusul-lughoh-online",
-    storageBucket: "durusul-lughoh-online.firebasestorage.app",
-    messagingSenderId: "260425044938",
-    appId: "1:260425044938:web:88d956d2cac35331887533",
-    measurementId: "G-8NR5K1NKPH"
-  };
+    // 2. Variabel Global Status Premium
+    let statusMemberPremium = false;
 
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-  const provider = new GoogleAuthProvider();
+    // CONFIG FIREBASE ANDA
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+        authDomain: "durusul-lughoh-online.firebaseapp.com",
+        projectId: "durusul-lughoh-online",
+        storageBucket: "durusul-lughoh-online.firebasestorage.app",
+        messagingSenderId: "260425044938",
+        appId: "1:260425044938:web:88d956d2cac35331887533",
+        measurementId: "G-8NR5K1NKPH"
+    };
 
-  // --- LOGIC UI ---
-  const loadingScreen = document.getElementById('loading-screen');
-  const loginScreen = document.getElementById('login-screen');
-  const dashboardScreen = document.getElementById('dashboard-screen');
-  const btnLogin = document.getElementById('btnLogin');
-  const btnLogout = document.getElementById('btnLogout');
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
 
-  // Login & Logout
-  btnLogin.addEventListener('click', () => { signInWithPopup(auth, provider).catch(console.error); });
-  btnLogout.addEventListener('click', () => { signOut(auth).then(() => window.location.reload()); });
+    // --- LOGIC UI ---
+    const loadingScreen = document.getElementById('loading-screen');
+    const loginScreen = document.getElementById('login-screen');
+    const dashboardScreen = document.getElementById('dashboard-screen');
+    const btnLogin = document.getElementById('btnLogin');
+    const btnLogout = document.getElementById('btnLogout');
 
-  // Auth State Listener (DENGAN LOADING SCREEN)
- onAuthStateChanged(auth, async (user) => {
-    if (user) {
-        // 1. Ambil data dasar dari akun Google
-        document.getElementById('userDisplayName').innerText = "Ahlan, " + user.displayName.split(" ")[0];
-        document.getElementById('profileName').innerText = user.displayName;
-        document.getElementById('profileEmail').innerText = user.email;
+    // Login & Logout
+    btnLogin.addEventListener('click', () => { signInWithPopup(auth, provider).catch(console.error); });
+    btnLogout.addEventListener('click', () => { signOut(auth).then(() => window.location.reload()); });
 
-        // 2. AMBIL DATA DARI DATABASE (XP & LEVEL)
-        const userRef = doc(db, "users", user.uid);
-        const docSnap = await getDoc(userRef);
+    // Auth State Listener
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // A. Update UI Dasar
+            document.getElementById('userDisplayName').innerText = "Ahlan, " + (user.displayName ? user.displayName.split(" ")[0] : "User");
+            document.getElementById('profileName').innerText = user.displayName;
+            document.getElementById('profileEmail').innerText = user.email;
 
-        if (docSnap.exists()) {
+            // B. Ambil Data Database
+            const userRef = doc(db, "users", user.uid);
+            let docSnap = await getDoc(userRef);
+
+            // C. Jika User Baru (Belum ada di DB), Buat dulu
+            if (!docSnap.exists()) {
+                await setDoc(userRef, { 
+                    email: user.email, 
+                    nama: user.displayName, 
+                    isPremium: false, 
+                    premiumExpired: null,
+                    nahwu_progress: 1,
+                    dl_progress: 1,
+                    total_xp: 0
+                });
+                docSnap = await getDoc(userRef); // Ambil ulang setelah dibuat
+            }
+
             const data = docSnap.data();
-            // Tampilkan XP dan Level ke elemen HTML yang kita buat tadi
+
+            // D. Tampilkan XP & Level
             if(document.getElementById('display-level')) {
                 document.getElementById('display-level').innerText = data.nahwu_progress || 1;
             }
             if(document.getElementById('display-xp')) {
                 document.getElementById('display-xp').innerText = data.total_xp || 0;
             }
+
+            // E. CEK STATUS PREMIUM (LOGIKA UTAMA)
+            const now = new Date();
+            const expired = data.premiumExpired ? new Date(data.premiumExpired) : null;
+            
+            // Reset UI dulu
+            document.getElementById('badgePremium').style.display = 'none';
+            document.querySelectorAll('.lock-icon').forEach(el => el.style.display = 'inline-block'); // Kunci semua dulu
+
+            if (data.isPremium && expired > now) {
+                // --- USER PREMIUM ---
+                statusMemberPremium = true;
+                
+                // Tampilkan Badge
+                document.getElementById('badgePremium').style.display = 'inline-block';
+                document.getElementById('badgeProfile').innerText = "Premium Member";
+                document.getElementById('badgeProfile').style.background = "gold";
+                document.getElementById('badgeProfile').style.color = "#713f12";
+
+                // Sembunyikan Gembok
+                document.querySelectorAll('.lock-icon').forEach(el => el.style.display = 'none');
+            } else {
+                // --- USER GRATISAN ---
+                statusMemberPremium = false;
+                
+                // Badge Biasa
+                document.getElementById('badgeProfile').innerText = "Free Member";
+                document.getElementById('badgeProfile').style.background = "#e2e8f0";
+                document.getElementById('badgeProfile').style.color = "#475569";
+            }
+
+            // F. Tampilkan Dashboard
+            loginScreen.style.display = 'none';
+            dashboardScreen.style.display = 'flex';
+        } else {
+            dashboardScreen.style.display = 'none';
+            loginScreen.style.display = 'flex';
         }
         
-        // 3. Cek Premium
-        await cekStatusPremium(user);
+        loadingScreen.style.display = 'none';
+    });
 
-        // 4. Tampilkan Dashboard, Sembunyikan Login
-        loginScreen.style.display = 'none';
-        dashboardScreen.style.display = 'flex';
-    } else {
-        dashboardScreen.style.display = 'none';
-        loginScreen.style.display = 'flex';
+    // --- FUNGSI GATEKEEPER (PENGECEK AKSES) ---
+    // Dipanggil saat tombol menu diklik
+    window.cekAkses = function(url, wajibPremium) {
+        // 1. Jika Menu Gratis (wajibPremium = false), langsung masuk
+        if (!wajibPremium) {
+            window.location.href = url;
+            return;
+        }
+
+        // 2. Jika Menu Berbayar, cek status member
+        if (statusMemberPremium) {
+            // Sudah Premium -> Masuk
+            window.location.href = url;
+        } else {
+            // Belum Premium -> Tampilkan Pesan Upsell
+            Swal.fire({
+                title: 'Konten Premium 🔒',
+                html: `Maaf, materi ini khusus member Premium.<br>Silakan upgrade akun antum.`,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Info Upgrade',
+                cancelButtonText: 'Nanti',
+                confirmButtonColor: '#16a34a'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire('Fitur Upgrade', 'Hubungi Admin via WhatsApp untuk upgrade.', 'success');
+                }
+            });
+        }
     }
-    
-    loadingScreen.style.display = 'none';
-  });
 
-  // Cek Premium
-  async function cekStatusPremium(user) {
-    const userRef = doc(db, "users", user.uid);
-    const userSnap = await getDoc(userRef);
-
-    if (!userSnap.exists()) {
-      await setDoc(userRef, { 
-          email: user.email, 
-          nama: user.displayName, 
-          isPremium: false, 
-          premiumExpired: null 
-      });
-    } else {
-      const data = userSnap.data();
-      const now = new Date();
-      const expired = data.premiumExpired ? new Date(data.premiumExpired) : null;
-
-      if (data.isPremium && expired > now) {
-          document.getElementById('badgePremium').style.display = 'inline-block';
-          document.getElementById('badgeProfile').innerText = "Premium Member";
-          document.getElementById('badgeProfile').style.background = "gold";
-          document.getElementById('badgeProfile').style.color = "#713f12";
-      }
+    // Navigasi Halaman (Home/Leaderboard/Profile)
+    window.gantiHalaman = function(pageId, btnElement) {
+        document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('page-' + pageId).classList.add('active');
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        btnElement.classList.add('active');
     }
-  }
 
-  // Navigasi
-  window.gantiHalaman = function(pageId, btnElement) {
-      document.querySelectorAll('.page-section').forEach(el => el.classList.remove('active'));
-      document.getElementById('page-' + pageId).classList.add('active');
-      document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-      btnElement.classList.add('active');
-  }
+    // --- FITUR GANTI NAMA ---
+    window.modeEditNama = function() {
+        const currentName = document.getElementById('profileName').innerText;
+        document.getElementById('inputNewName').value = currentName;
+        document.getElementById('name-display').style.display = 'none';
+        document.getElementById('name-edit').style.display = 'block';   
+    }
 
-  // --- FITUR GANTI NAMA ---
-  
-  // 1. Munculkan Form Edit
-  window.modeEditNama = function() {
-      const currentName = document.getElementById('profileName').innerText;
-      document.getElementById('inputNewName').value = currentName; // Isi otomatis nama lama
-      
-      document.getElementById('name-display').style.display = 'none'; // Sembunyikan Teks
-      document.getElementById('name-edit').style.display = 'block';   // Munculkan Input
-  }
+    window.batalEditNama = function() {
+        document.getElementById('name-display').style.display = 'flex';
+        document.getElementById('name-edit').style.display = 'none';
+    }
 
-  // 2. Batal Edit
-  window.batalEditNama = function() {
-      document.getElementById('name-display').style.display = 'flex';
-      document.getElementById('name-edit').style.display = 'none';
-  }
+    window.simpanNamaBaru = async function() {
+        const newName = document.getElementById('inputNewName').value;
+        const user = auth.currentUser;
 
-  // 3. Simpan ke Firebase
-  window.simpanNamaBaru = async function() {
-      const newName = document.getElementById('inputNewName').value;
-      const user = auth.currentUser;
+        if (newName.trim() === "") { alert("Nama tidak boleh kosong!"); return; }
 
-      if (newName.trim() === "") {
-          alert("Nama tidak boleh kosong!");
-          return;
-      }
+        const btnSimpan = document.querySelector('#name-edit button');
+        btnSimpan.innerText = "...";
 
-      // Tampilkan Loading sederhana (ubah tombol jadi ...)
-      const btnSimpan = document.querySelector('#name-edit button');
-      btnSimpan.innerText = "...";
+        try {
+            await updateProfile(user, { displayName: newName });
+            const userRef = doc(db, "users", user.uid);
+            await updateDoc(userRef, { nama: newName });
 
-      try {
-          // A. Update di Auth (Google Login)
-          await updateProfile(user, { displayName: newName });
-          
-          // B. Update di Database Firestore
-          const userRef = doc(db, "users", user.uid);
-          await updateDoc(userRef, { nama: newName });
+            document.getElementById('profileName').innerText = newName;
+            document.getElementById('userDisplayName').innerText = "Ahlan, " + newName.split(" ")[0];
+            
+            alert("Nama berhasil diubah!");
+            batalEditNama(); 
 
-          // C. Update UI
-          document.getElementById('profileName').innerText = newName;
-          document.getElementById('userDisplayName').innerText = "Ahlan, " + newName.split(" ")[0]; // Update Header juga
-          
-          alert("Nama berhasil diubah!");
-          batalEditNama(); // Kembali ke tampilan awal
+        } catch (error) {
+            console.error("Gagal update nama:", error);
+            alert("Gagal mengubah nama. Coba lagi.");
+        } finally {
+            btnSimpan.innerText = "💾"; 
+        }
+    }
 
-      } catch (error) {
-          console.error("Gagal update nama:", error);
-          alert("Gagal mengubah nama. Coba lagi.");
-      } finally {
-          btnSimpan.innerText = "💾"; // Balikin tombol
-      }
-  }
-  // --- FITUR SUARA & GETAR ---
-
-  // 1. Siapkan Audio (Pastikan folder 'audio' dan file 'pop.mp3' sudah ada)
+    // --- FITUR SUARA & GETAR ---
     const soundPop = new Audio("audio/pop.mp3");
-  
-  // 2. Load Setting Awal dari LocalStorage (HP User)
-  let isSoundOn = localStorage.getItem('pref_sound') !== 'false'; // Default TRUE
-  let isVibrateOn = localStorage.getItem('pref_vibrate') !== 'false'; // Default TRUE
+    
+    let isSoundOn = localStorage.getItem('pref_sound') !== 'false'; 
+    let isVibrateOn = localStorage.getItem('pref_vibrate') !== 'false'; 
 
-  // Set posisi toggle UI sesuai settingan
-  document.getElementById('toggleSound').checked = isSoundOn;
-  document.getElementById('toggleVibration').checked = isVibrateOn;
+    if(document.getElementById('toggleSound')) document.getElementById('toggleSound').checked = isSoundOn;
+    if(document.getElementById('toggleVibration')) document.getElementById('toggleVibration').checked = isVibrateOn;
 
-  // 3. Fungsi Update Setting (Dipanggil saat switch digeser)
-  window.updateSetting = function(type) {
-      if (type === 'sound') {
-          isSoundOn = document.getElementById('toggleSound').checked;
-          localStorage.setItem('pref_sound', isSoundOn);
-          if(isSoundOn) soundPop.play(); // Test bunyi
-      } else if (type === 'vibrate') {
-          isVibrateOn = document.getElementById('toggleVibration').checked;
-          localStorage.setItem('pref_vibrate', isVibrateOn);
-          if(isVibrateOn && navigator.vibrate) navigator.vibrate(50); // Test getar
-      }
-  }
+    window.updateSetting = function(type) {
+        if (type === 'sound') {
+            isSoundOn = document.getElementById('toggleSound').checked;
+            localStorage.setItem('pref_sound', isSoundOn);
+            if(isSoundOn) soundPop.play(); 
+        } else if (type === 'vibrate') {
+            isVibrateOn = document.getElementById('toggleVibration').checked;
+            localStorage.setItem('pref_vibrate', isVibrateOn);
+            if(isVibrateOn && navigator.vibrate) navigator.vibrate(50); 
+        }
+    }
 
-  // 4. GLOBAL LISTENER: Deteksi klik di seluruh aplikasi
-  document.addEventListener('click', function(e) {
-      // Cek apakah yang diklik adalah Tombol atau Card atau Navigasi
-      // Kita cek apakah element punya class 'btn-effect', 'btn-play', 'nav-item', atau tag <button>
-      if (
-          e.target.tagName === 'BUTTON' || 
-          e.target.classList.contains('nav-item') ||
-          e.target.classList.contains('level-card') ||
-          e.target.classList.contains('btn-effect') ||
-          e.target.closest('.level-card') || 
-          e.target.closest('.nav-item')
-      ) {
-          mainkanEfek();
-      }
-  });
+    // Global Listener Efek Klik
+    document.addEventListener('click', function(e) {
+        if (
+            e.target.tagName === 'BUTTON' || 
+            e.target.classList.contains('nav-item') ||
+            e.target.classList.contains('level-card') ||
+            e.target.classList.contains('btn-effect') ||
+            e.target.closest('.level-card') || 
+            e.target.closest('.nav-item')
+        ) {
+            mainkanEfek();
+        }
+    });
 
-  // Fungsi Eksekusi
-  function mainkanEfek() {
-      // Mainkan Suara
-      if (isSoundOn) {
-          soundPop.currentTime = 0; // Reset ke awal biar bisa di-spam klik
-          soundPop.play().catch(e => console.log("Audio play error:", e));
-      }
-      
-      // Mainkan Getar (50 milidetik)
-      if (isVibrateOn && navigator.vibrate) {
-          navigator.vibrate(50);
-      }
-  }
+    function mainkanEfek() {
+        if (isSoundOn) {
+            soundPop.currentTime = 0; 
+            soundPop.play().catch(e => {});
+        }
+        if (isVibrateOn && navigator.vibrate) {
+            navigator.vibrate(50);
+        }
+    }
 </script>
 
 </body>
 
 </html>
+
