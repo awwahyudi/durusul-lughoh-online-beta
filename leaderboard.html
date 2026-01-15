@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Papan Peringkat</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f8fafc; color: #333; display: flex; justify-content: center; min-height: 100vh; }
+        
+        #app-container {
+            width: 100%; max-width: 480px; background: white;
+            display: flex; flex-direction: column; height: 100vh;
+            position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        /* HEADER ELEGANT */
+        header {
+            padding: 20px; background: linear-gradient(135deg, #1e293b, #0f172a);
+            color: white; border-bottom-left-radius: 25px; border-bottom-right-radius: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); z-index: 10;
+        }
+        .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; }
+        .btn-back { background: rgba(255,255,255,0.2); border: none; color: white; width: 40px; height: 40px; border-radius: 50%; font-size: 1.2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        
+        .top-three { display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin-top: 10px; padding-bottom: 10px; }
+        .podium { text-align: center; width: 80px; }
+        .avatar-circle { width: 50px; height: 50px; background: #e2e8f0; border-radius: 50%; margin: 0 auto 5px; border: 3px solid white; display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 1.2rem; color: #475569; position: relative; }
+        
+        /* JUARA 1 */
+        .podium.rank-1 .avatar-circle { width: 70px; height: 70px; border-color: #fbbf24; background: #fffbeb; color: #d97706; font-size: 1.8rem; }
+        .podium.rank-1 .medal { content: '🥇'; position: absolute; bottom: -10px; font-size: 1.5rem; }
+        
+        /* JUARA 2 & 3 */
+        .podium.rank-2 .avatar-circle { border-color: #cbd5e1; background: #f1f5f9; color: #64748b; }
+        .podium.rank-3 .avatar-circle { border-color: #fdba74; background: #fff7ed; color: #c2410c; }
+        
+        .p-name { font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; font-weight: 600; margin-top: 5px; }
+        .p-xp { font-size: 0.75rem; color: #cbd5e1; }
+        .podium.rank-1 .p-xp { color: #fbbf24; font-weight: bold; }
+
+        /* LIST CONTAINER */
+        #list-area { flex: 1; overflow-y: auto; padding: 20px; }
+        
+        .rank-item {
+            display: flex; align-items: center; background: white;
+            padding: 12px 15px; border-radius: 12px; margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #f1f5f9;
+            transition: transform 0.2s;
+        }
+        .rank-item.me { border: 2px solid #2563eb; background: #eff6ff; } /* Highlight Diri Sendiri */
+        
+        .rank-num { font-weight: 900; font-size: 1.1rem; color: #94a3b8; width: 35px; text-align: center; }
+        .rank-info { flex: 1; margin-left: 10px; }
+        .rank-name { font-weight: 600; color: #333; font-size: 0.95rem; }
+        .rank-xp { font-weight: bold; color: #f59e0b; font-size: 0.9rem; }
+        
+        /* WARNA NOMOR TOP 3 DI LIST */
+        .rank-item:nth-child(1) .rank-num { color: #d97706; } /* Emas */
+        .rank-item:nth-child(2) .rank-num { color: #64748b; } /* Perak */
+        .rank-item:nth-child(3) .rank-num { color: #c2410c; } /* Perunggu */
+
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <header>
+        <div class="header-top">
+            <button class="btn-back" onclick="window.location.href='index.html'">⬅️</button>
+            <h3 style="flex:1; text-align:center;">Papan Peringkat</h3>
+            <div style="width:40px;"></div> </div>
+
+        <div id="podium-area" class="top-three">
+            <div style="color:white; font-size:0.9rem;">Memuat data...</div>
+        </div>
+    </header>
+
+    <div id="list-area">
+        </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-auth.js";
+    import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyA1RESzQo4srN6R3rxLABv8Xw4menYsuJg",
+        authDomain: "durusul-lughoh-online.firebaseapp.com",
+        projectId: "durusul-lughoh-online",
+        storageBucket: "durusul-lughoh-online.firebasestorage.app",
+        messagingSenderId: "260425044938",
+        appId: "1:260425044938:web:88d956d2cac35331887533",
+        measurementId: "G-8NR5K1NKPH"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            loadLeaderboard(user.uid);
+        } else {
+            // Jika belum login, tetap tampilkan tapi tanpa highlight diri sendiri
+            loadLeaderboard(null);
+        }
+    });
+
+    async function loadLeaderboard(myUid) {
+        const podiumArea = document.getElementById('podium-area');
+        const listArea = document.getElementById('list-area');
+        
+        try {
+            // QUERY: Ambil 50 user dengan XP tertinggi
+            const q = query(
+                collection(db, "users"), 
+                orderBy("total_xp", "desc"), 
+                limit(50)
+            );
+            
+            const querySnapshot = await getDocs(q);
+            const users = [];
+            
+            querySnapshot.forEach((doc) => {
+                users.push({ id: doc.id, ...doc.data() });
+            });
+
+            if (users.length === 0) {
+                podiumArea.innerHTML = "Belum ada data.";
+                return;
+            }
+
+            // --- RENDER PODIUM (TOP 3) ---
+            let podiumHtml = '';
+            
+            // Juara 2 (Kiri)
+            if (users[1]) podiumHtml += buildPodiumItem(users[1], 2);
+            
+            // Juara 1 (Tengah - Terbesar)
+            if (users[0]) podiumHtml += buildPodiumItem(users[0], 1);
+            
+            // Juara 3 (Kanan)
+            if (users[2]) podiumHtml += buildPodiumItem(users[2], 3);
+
+            podiumArea.innerHTML = podiumHtml;
+
+            // --- RENDER LIST (Peringkat 4 dst) ---
+            let listHtml = '';
+            // Mulai loop dari index 3 (Juara 4)
+            for (let i = 3; i < users.length; i++) {
+                const u = users[i];
+                const isMe = (u.id === myUid) ? 'me' : '';
+                const nama = u.nama || "Hamba Allah";
+                const xp = u.total_xp || 0;
+                
+                listHtml += `
+                    <div class="rank-item ${isMe}">
+                        <div class="rank-num">${i + 1}</div>
+                        <div class="avatar-circle" style="width:35px; height:35px; font-size:0.9rem; margin:0;">${getInitials(nama)}</div>
+                        <div class="rank-info">
+                            <div class="rank-name">${nama}</div>
+                            <div class="rank-xp">${xp} XP</div>
+                        </div>
+                    </div>
+                `;
+            }
+            listArea.innerHTML = listHtml;
+
+        } catch (error) {
+            console.error("Error loading leaderboard:", error);
+            // PENTING: Error ini biasanya muncul pertama kali karena butuh INDEX di Firestore
+            if(error.message.includes("requires an index")) {
+                podiumArea.innerHTML = `<div style="text-align:center; font-size:0.8rem; color:pink;">
+                    Admin perlu membuat Index di Firestore Console.<br>Cek Console Log browser.
+                </div>`;
+            }
+        }
+    }
+
+    function buildPodiumItem(u, rank) {
+        const nama = (u.nama || "User").split(" ")[0]; // Ambil nama depan saja biar muat
+        const xp = u.total_xp || 0;
+        const medal = rank === 1 ? '<div class="medal">🥇</div>' : '';
+        
+        return `
+            <div class="podium rank-${rank}">
+                <div class="avatar-circle">
+                    ${getInitials(nama)}
+                    ${medal}
+                </div>
+                <div class="p-name">${nama}</div>
+                <div class="p-xp">${xp} XP</div>
+            </div>
+        `;
+    }
+
+    function getInitials(name) {
+        if(!name) return "?";
+        return name.charAt(0).toUpperCase();
+    }
+</script>
+
+</body>
+</html>
