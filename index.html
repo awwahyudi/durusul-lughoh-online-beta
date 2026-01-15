@@ -99,7 +99,40 @@
 
         .level-info h3 { margin-bottom: 5px; color: #15803d; }
         .level-info p { font-size: 0.9rem; color: #64748b; }
-        
+        /* --- TAMPILAN TERKUNCI (LOCKED MODE) --- */
+        .level-card.locked-mode {
+            background-color: #f8fafc !important; /* Background Abu-abu Pucat */
+            border-bottom-color: #cbd5e1 !important; /* Border Abu */
+            position: relative;
+        }
+
+        /* Ubah warna teks jadi abu-abu */
+        .level-card.locked-mode h3, 
+        .level-card.locked-mode p,
+        .level-card.locked-mode div {
+            color: #94a3b8 !important; 
+        }
+
+        /* Ikon Gembok Tetap Merah/Gelap Biar Kelihatan */
+        .level-card.locked-mode .lock-icon {
+            color: #ef4444 !important; /* Merah */
+            display: inline-block !important; /* Paksa muncul */
+            margin-left: 5px;
+        }
+
+        /* Tombol jadi abu-abu */
+        .level-card.locked-mode .btn-play {
+            background: #cbd5e1 !important;
+            border-bottom-color: #94a3b8 !important;
+            color: #64748b !important;
+            cursor: pointer; /* Tetap bisa diklik untuk memunculkan popup upgrade */
+        }
+
+        /* Efek Grayscale (Hitam Putih) untuk Emoji/Gambar */
+        .level-card.locked-mode div[style*="font-size: 2.5rem"] {
+            filter: grayscale(100%);
+            opacity: 0.5;
+        }        
         .btn-play {
             background: #16a34a; color: white; border: none; padding: 10px 20px;
             border-radius: 10px; font-weight: bold; border-bottom: 4px solid #14532d; cursor: pointer;
@@ -190,16 +223,15 @@
         </header>
 
         <main>
-       <div id="page-home" class="page-section active">
+<div id="page-home" class="page-section active">
                 <h2 style="margin-bottom: 20px; color: #166534;">Menu Utama</h2>
                 
-                <div class="level-card btn-effect" onclick="cekAkses('dl.html', true)" style="cursor: pointer;">
+                <div id="card-pemula" class="level-card btn-effect" onclick="cekAkses('dl.html', true)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">📖</div> 
                         <div class="level-info">
                             <h3 style="margin:0;">
-                                Pemula 
-                                <span class="lock-icon" style="font-size: 0.8rem; display:none;">🔒</span>
+                                Pemula <span class="lock-icon" style="display:none;">🔒</span>
                             </h3>
                             <p style="margin:0; font-size:0.85rem; color:#666;">Durusul Lughah</p>
                         </div>
@@ -207,13 +239,12 @@
                     <button class="btn-play">Mulai</button>
                 </div>
 
-                <div class="level-card btn-effect" onclick="cekAkses('nahwu.html', true)" style="cursor: pointer;">
+                <div id="card-lanjutan" class="level-card btn-effect" onclick="cekAkses('nahwu.html', true)" style="cursor: pointer;">
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🚀</div> 
                         <div class="level-info">
                             <h3 style="margin:0;">
-                                Lanjutan
-                                <span class="lock-icon" style="font-size: 0.8rem; display:none;">🔒</span>
+                                Lanjutan <span class="lock-icon" style="display:none;">🔒</span>
                             </h3>
                             <p style="margin:0; font-size:0.85rem; color:#666;">Ilmu Nahwu</p>
                         </div>
@@ -232,20 +263,17 @@
                     <button class="btn-play" style="background:#f59e0b; border-bottom:4px solid #b45309;">Buka</button>
                 </div>
 
-        <div class="level-card btn-effect" onclick="cekAkses('kosakata.html', true)" 
+                <div id="card-kosakata" class="level-card btn-effect" onclick="cekAkses('kosakata.html', true)" 
                      style="cursor: pointer; background: #faf5ff; border-bottom: 4px solid #d8b4fe;">
-                    
                     <div style="display:flex; align-items:center; gap: 15px;">
                         <div style="font-size: 2.5rem;">🎮</div> 
                         <div class="level-info">
                             <h3 style="margin:0; color: #7e22ce;">
-                                Kosakata
-                                <span class="lock-icon" style="font-size: 0.8rem; display:none;">🔒</span>
+                                Kosakata <span class="lock-icon" style="display:none;">🔒</span>
                             </h3>
                             <p style="margin:0; font-size:0.85rem; color:#6b7280;">Game Hafalan</p>
                         </div>
                     </div>
-                    
                     <button class="btn-play" style="background: #9333ea; border-bottom: 4px solid #6b21a8;">Main</button>
                 </div>
             </div>
@@ -402,36 +430,52 @@
                 document.getElementById('display-xp').innerText = data.total_xp || 0;
             }
 
-            // E. CEK STATUS PREMIUM (LOGIKA UTAMA)
+// ... (Kode sebelumnya sama) ...
+
+            // E. CEK STATUS PREMIUM (LOGIKA UTAMA & VISUAL)
             const now = new Date();
             const expired = data.premiumExpired ? new Date(data.premiumExpired) : null;
             
-            // Reset UI dulu
-            document.getElementById('badgePremium').style.display = 'none';
-            document.querySelectorAll('.lock-icon').forEach(el => el.style.display = 'inline-block'); // Kunci semua dulu
+            // Daftar ID Kartu yang Premium
+            const premiumCards = ['card-pemula', 'card-lanjutan', 'card-kosakata'];
 
             if (data.isPremium && expired > now) {
                 // --- USER PREMIUM ---
                 statusMemberPremium = true;
                 
-                // Tampilkan Badge
+                // 1. Tampilkan Badge Premium
                 document.getElementById('badgePremium').style.display = 'inline-block';
                 document.getElementById('badgeProfile').innerText = "Premium Member";
                 document.getElementById('badgeProfile').style.background = "gold";
                 document.getElementById('badgeProfile').style.color = "#713f12";
 
-                // Sembunyikan Gembok
+                // 2. Buka Kunci Visual (Hapus class locked-mode)
+                premiumCards.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.remove('locked-mode');
+                });
+
+                // Sembunyikan semua ikon gembok
                 document.querySelectorAll('.lock-icon').forEach(el => el.style.display = 'none');
+
             } else {
                 // --- USER GRATISAN ---
                 statusMemberPremium = false;
                 
-                // Badge Biasa
+                // 1. Tampilkan Badge Free
+                document.getElementById('badgePremium').style.display = 'none';
                 document.getElementById('badgeProfile').innerText = "Free Member";
                 document.getElementById('badgeProfile').style.background = "#e2e8f0";
                 document.getElementById('badgeProfile').style.color = "#475569";
-            }
 
+                // 2. Kunci Visual (Tambah class locked-mode)
+                premiumCards.forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('locked-mode');
+                });
+                
+                // Ikon gembok akan muncul otomatis lewat CSS .locked-mode .lock-icon
+            }
             // F. Tampilkan Dashboard
             loginScreen.style.display = 'none';
             dashboardScreen.style.display = 'flex';
@@ -572,5 +616,6 @@
 </body>
 
 </html>
+
 
 
