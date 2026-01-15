@@ -328,7 +328,7 @@ const databaseSoal = {
         } else { window.location.href = 'index.html'; }
     });
 
-    window.muatSoal = function() {
+window.muatSoal = function() {
         if (soalSekarang >= daftarSoal.length) { levelSelesai(); return; }
         const data = daftarSoal[soalSekarang];
 
@@ -343,7 +343,9 @@ const databaseSoal = {
             activeAudio.play().catch(()=>{});
         }
 
-        document.getElementById('question-text').innerText = data.tanya || "";
+        // --- BAGIAN INI YANG DIPERBAIKI (Ganti innerText jadi innerHTML) ---
+        document.getElementById('question-text').innerHTML = data.tanya || "";
+        
         const area = document.getElementById('options-area');
         area.innerHTML = ''; pilihanUser = null;
         document.getElementById('btn-check').style.display = 'none';
